@@ -1,5 +1,5 @@
 # Compiler for C
-Start exciting journey. Will write down all the way up.
+Start exciting journey. Use Haskell for that(pattern matching, functional language...).
 Start from basic model of compiler and write module after module.
 
 Basic structure is:
