@@ -5,6 +5,10 @@ Start from basic model of compiler and write module after module.
 Basic structure is:
   - Lexical analyzer(simple tokens analyz)
     * Regular expression and FSM
+    - Simple DFA in Haskell:
+        - Think about DFA vs NFA
+        - NFA into DFA
+        - Backtracking
   - Parser(output is parse tree)
     * Context free grammar, Parser types(TD, BU), types of grammar itself.
   - Semantic analyzer(It's all about semantic correctness)
