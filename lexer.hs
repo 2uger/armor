@@ -1,3 +1,9 @@
+{- 
+    Scanner for tokens like:
+    (+, -, =, *, id)
+    Based on simple DFA without backtracking
+-}
+
 module Main where
 
 import Data.Char
@@ -11,9 +17,10 @@ main = do
 data Token = TokenPlus String 
            | TokenMinus String
            | TokenEqual String
-           | TokenIf String
+           | TokenMul String
+           | TokenID String
            | TokenWhiteSpace
-           | TokenInvalid
+           | TokenInvalid String
            deriving (Show, Eq)
 
 printResults [] = error "Empty List!"
@@ -29,7 +36,7 @@ parseTokens input =
 
 -- driveTable scanning token till final state or Error
 driveTable :: Int -> String -> String -> (Token, String)
-driveTable currState tokenStr [] = (TokenInvalid, "Invalid token")
+driveTable currState tokenStr [] = (TokenInvalid tokenStr, "")
 driveTable currState tokenStr (c:xs) = 
     let 
         (nextSt, isConsume) = nextState currState c
@@ -44,18 +51,20 @@ driveTable currState tokenStr (c:xs) =
 nextTokenString :: String -> Char -> String -> Bool -> (String, String)
 nextTokenString tokenStr c remain isConsume
     | isConsume = (tokenStr ++ [c], remain)
-    | not isConsume = (tokenStr, remain)
+    | not isConsume = (tokenStr, c:remain)
 
 
 -- finalState define is current state is final state or not
 finalState :: Int -> String -> (Bool, Token)
-finalState 1 tokenStr = (True, TokenPlus tokenStr)
-finalState 2 tokenStr = (True, TokenMinus tokenStr)
-finalState 3 tokenStr = (True, TokenEqual tokenStr)
-finalState 5 tokenStr = (True, TokenIf tokenStr)
-finalState 99 tokenStr = (True, TokenWhiteSpace)
-finalState 999 tokenStr = (True, TokenInvalid)
-finalState _ tokenStr = (False, TokenIf tokenStr)
+finalState x tokenStr
+        | x == 1 = (True, TokenPlus tokenStr)
+        | x == 2 = (True, TokenMinus tokenStr)
+        | x == 3 = (True, TokenMul tokenStr)
+        | x == 4 = (True, TokenEqual tokenStr)
+        | x == 6 = (True, TokenID tokenStr)
+        | x == 7 = (True, TokenWhiteSpace)
+        | x == 99 = (True, TokenInvalid tokenStr)
+        | otherwise = (False, TokenInvalid tokenStr)
 
 
 -- nextState consume initial state and next char
@@ -64,22 +73,11 @@ nextState :: Int -> Char -> (Int, Bool)
 nextState 0 c 
         | c == '+' = (1, True)  
         | c == '-' = (2, True)
-        | c == ' ' = (99, True)
-        | c == '=' = (3, True)
-        | c == 'i' = (4, True)
-        | otherwise = (999, False)
-nextState 1 c
-        | c == ' ' = (99, True)
-        | otherwise = (999, False) 
-nextState 2 c
-        | c == ' ' = (99, True)
-        | otherwise = (999, False) 
-nextState 3 c 
-        | c == ' ' = (99, True)
-        | otherwise = (999, False)
-nextState 4 c
-        | c == 'f' = (5, True)
-        | c == ' ' = (999, False)
+        | c == '*' = (3, True)
+        | c == '=' = (4, True)
+        | c `elem` ['a'..'z'] = (5, True)
+        | c == ' ' = (7, True)
+        | otherwise = (99, True)
 nextState 5 c
-        | c == ' ' = (99, True)
-        | otherwise = (999, True)
+        | c `elem` ['a'..'z'] = (5, True)
+        | otherwise = (6, False)  
