@@ -6,6 +6,7 @@ Basic structure is:
   - Lexical analyzer(simple tokens analyz)
     * Regular expression and FSM
     * Think about DFA vs NFA
+    * REGex into DFA
     * NFA into DFA
     * Backtracking
     * Plan:
@@ -14,9 +15,12 @@ Basic structure is:
     * Context free grammar, Parser types(TD, BU), types of grammar itself.
     * TopDown vs BottomUp 
     * LL vs LR
-    * Plan:
-        - Write LR-ish parser doesnt worth it, but demand to understand adv/disadv
-        - Make LL1 grammar parser(both approaches: driven table and recursive descent)
+    * LL is easy to write, but harder to build(left recursion and prefixes)
+    * Build SLR parser:
+        - Create LR(0) automaton
+        - Find follow and first
+        - Create Parse Table from this
+        - Write parser(stack, parse table, parser itself)
   - Semantic analyzer(It's all about semantic correctness)
   - Intermediate code representation
   - Code optimizer
