@@ -9,7 +9,7 @@
 
 -}
 
-parseTable = [(Symbol, [Symbol]), (), (), ()]
+parseTable = [(NonTerminal Start, [NonTerminal funcSt, Terminal TokenSum]), (), (), ()]
 
 data Token = TokenSum | TokenMinus
 
@@ -47,5 +47,7 @@ matchRule token symbol = let
 
 parseTable :: Production -> Token -> [Symbol] 
 parseTable nterm token = 
-    | nterm == Expr = case token of .. 
-    | nterm == Expr =
+    let 
+        symbols = lookup table NonTerminal nterm
+    in 
+        symbols
