@@ -9,45 +9,60 @@
 
 -}
 
-parseTable = [(NonTerminal Start, [NonTerminal funcSt, Terminal TokenSum]), (), (), ()]
+parseGrammar = 
 
-data Token = TokenSum | TokenMinus
+firstSet = 
 
-data Production = expr | funcSt
+followSet = 
 
-data Symbol = NonTerminal Production | Terminal Token
+grammar = fromList [
+    (Symbol "funcSt", (Symbol "TokenPlus")),
+    (Symbol "NonTerm", (Symbol "TOKENNNNS"))
+]
+
+parseTable = fromList [(Symbol "Non terminal", parseTableSymbol1)]
+parseTableSymbol1 = fromList [(Symbol "Symb", grammar_rule)]
+
+data Symbol = Symbol String
 
 parser :: [Token] -> String
 parser input = 
     let 
-        isMatch = parseToken input ['$']
+        isMatch = parseToken input [Symbol "funcSt", Symbol "$"]
     in
-        case isMatch of True -> "Parser sucess"
-                        False -> "Parser failed"
+        case isMatch of 
+            True -> "Parser sucess"
+            False -> "Parser failed"
 
-parseToken :: [Token] -> [Symbol] -> Bool
-parseToken (token:remain) (top:stack)
-        | top == token           = parser remain stack 
-        | matchRule    token top = let 
-                                      stack' = parseTable top token
-
-                                   in 
-                                      parseToken input stack'
-        | otherwise = False
+{-
+- Take list of tokens and stack for storing symbols
+-}
+parseToken :: [Symbol] -> [Symbol] -> Bool
+parseStr (token:remain) (topSymb:stack)
+    | topSymb == token        = parseStr remain stack 
+    | matchRule token topSymb = let 
+                                stack' = parseTable top token
+                            in 
+                                parseToken input stack'
+    | otherwise = False
 
 parseToken _ [] = True
         
-matchRule :: Token -> Symbol -> Bool
-matchRule token symbol = let 
-                            symbols = parseTable symbol token
-                         in 
-                            case symbols of [x] -> True
-                                         of symbols -> True
-                                         of [] -> True
-
-parseTable :: Production -> Token -> [Symbol] 
-parseTable nterm token = 
+matchRule :: Symbol -> Symbol -> Bool
+matchRule token symbol = 
     let 
-        symbols = lookup table NonTerminal nterm
+        symbols = parseTable symbol token
     in 
-        symbols
+        case of symbols
+            [x]     -> True
+            symbols -> True
+            []      -> True
+
+parseTable :: Symbol -> Symbol -> [Symbol] 
+parseTable topSymbol token = 
+    let 
+        production = lookup topSymbol parseTable
+        grammarRule = lookup token production
+        lhs = tail $ grammar !! grammarRule
+    in 
+        lhs

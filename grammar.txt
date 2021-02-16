@@ -1,0 +1,38 @@
+-- Non terminals(tokens) named by uppercase letters
+-- E means nothing
+
+
+program :: decList
+decList :: declList decl | decl
+decl    :: varDecl | funcDecl
+
+varDecl     :: typeSpec varDeclList
+typeSpec    :: int | bool 
+varDeclList :: varDeclList, varDeclInit | varDeclInit
+varDeclInit :: ID | ID [NUMCONST]
+
+funcDecl     :: typeSpec ID ( parms) { stmt }
+parms        :: parmList | E
+parmList     :: parmList; parmTypeList | parmTypeList
+parmTypeList :: typeSpec parmIdList
+parmIdList   :: parmIdList, parmId | parmId
+parmId       :: ID | ID[]
+
+stmt         :: expStmt | compoundStmt | iterStmt | returnStmt | breakStmt 
+expStmt      :: exp; | ;
+compoundStmt :: { localDecls stmtList }
+localDecls   :: localDecls scopedVarDecl | E
+iterStmt     :: while(simpleExpr) {stmt}
+returnStmt   :: return; | return exp;
+breakStmt    :: break;
+
+exp        :: mutable = exp | mutable += exp
+simpleExpr :: simpleExpr or andExp | and Exp
+mutable    :: ID | ID[exp]
+call       :: ID(args)
+arg        :: argList | E
+argList    :: argList, exp | exp
+
+
+
+ 
