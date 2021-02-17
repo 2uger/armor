@@ -9,16 +9,75 @@
 
 -}
 
-parseGrammar = 
-
-firstSet = 
-
-followSet = 
-
 grammar = fromList [
     (Symbol "funcSt", (Symbol "TokenPlus")),
     (Symbol "NonTerm", (Symbol "TOKENNNNS"))
 ]
+
+-- List of terminals(tokens) to make differ between 
+-- production and terminals, because symbol represent both
+tokens = [Symbol "+", Symbol "ID"]
+
+parseGrammar = 
+
+{- 
+ - return Map in format [(Symbol, Set),..]
+-}
+firsSet :: Map k v -> Map k v -> Map k v 
+firstSet (grammarRule:grammar) firstSymbol = 
+    let 
+        throughGrammar' = throughGrammar first
+        firstSymbol' = map throughGrammar' grammar
+    in 
+        firstSymbol'
+
+throughGrammar :: Map k v -> (k, v) -> Map k v
+throughGrammar firstSet grammarRule = 
+    let 
+        lhs = head grammarRule
+        rhs = tail grammarRule
+        set = first firstSet
+    in
+        set:
+        
+throughRhs firstSet rhs set= 
+    let 
+        symbol = head rhs
+    in 
+        set:first symbol firstSet
+
+first :: Symbol -> Map k v -> Map k v
+first symbol firstSet = 
+    |symbol `elem` tokens = firstSet(symbol)
+    |symbol `elem` nonTerminals = 
+                            let 
+                                rhs = grammar[symbol]
+                                symbol = head rhs
+                                flag = isEmptyString symbol
+                            in case of flag True -> firstSet(symbol) - E : first rest firstSet
+                                            Fasle -> firstSet
+    |otherwise = False
+
+
+first [] firstSet = firstSet
+    
+
+
+followSet :: Map k v -> Map k v -> Map k v
+followSet grammar follow = 
+
+throughGrammar followSet grammarRule = 
+    let
+        rhs = head grammarRule
+        lhs = tail grammarRule
+        followSymbol = followSymb
+    in
+
+followSymbol symbols
+    | is terminal last element = firstSet(symbol) - E
+    | not is terminal last element  || terminal last and firstSet(terminal) U E = 
+    
+    
 
 parseTable = fromList [(Symbol "Non terminal", parseTableSymbol1)]
 parseTableSymbol1 = fromList [(Symbol "Symb", grammar_rule)]
