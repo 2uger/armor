@@ -1,57 +1,75 @@
-module Parser where
-import Lexer 
+{- 
+    1. Translate grammar into haskell representation
+        -Parse file
+        -Make map in a way {NonT: [NonT, Term, NonT],
+                            NonT: [..]}
+    2. Make a parse table 
+        -Construct first and follow set
+    3. Write a LL(1) parser by table driven approach
 
-data NonTerminal = S | E | Eprime | T | Tprime | F
+-}
 
-parser :: [Token] -> Bool
-parser [] = False
-parser tokens = 
+import ParseGrammar (parseGrammar, )
+import FirstFollow (firstSymbolSet, followSymbolSet, )
+
+
+data Symbol = Symbol String deriving (Show, Read)
+
+data Rule = Rule { prod :: Symbol, rhs :: [Symbol] } deriving (Show) 
+
+data Grammar = Grammar [Rule] deriving (Show)
+
+--------------Create grammar--------------------
+
+grammarFile = "grammar.txt"
+
+main :: IO ()
+main = do
+         grammarText <- readFile grammarFile
+         let
+             grammar = parseGrammar grammarText
+          
+
+--------------Parser Itself--------------------
+
+parser :: [Token] -> String
+parser input = 
     let 
-        (isOk, _) = parse S tokens
-    in isOk
+        isMatch = parseToken input [Symbol "funcSt", Symbol "$"]
+    in
+        case isMatch of 
+            True -> "Parser sucess"
+            False -> "Parser failed"
 
-parse :: NonTerminal -> [Token] -> (Bool, [Token])
-parse S input = 
+{-
+- Take list of tokens and stack for storing symbols
+-}
+parseToken :: [Symbol] -> [Symbol] -> Bool
+parseStr (token:remain) (topSymb:stack)
+    | topSymb == token        = parseStr remain stack 
+    | matchRule token topSymb = let 
+                                stack' = parseTable top token
+                            in 
+                                parseToken input stack'
+    | otherwise = False
+
+parseToken _ [] = True
+        
+matchRule :: Symbol -> Symbol -> Bool
+matchRule token symbol = 
     let 
-        (r1, remain) = parse E input 
-    in (r1, remain) 
+        symbols = parseTable symbol token
+    in 
+        case of symbols
+            [x]     -> True
+            symbols -> True
+            []      -> True
 
-parse E input =
-    let
-        (r1, remain)  = parse T input
-        (r2, remain') = parse Eprime remain
-    in (r1 && r2, remain')
-
-parse Eprime (token:remain)
-    | token == TokenPlus = let 
-                               (r1, remain')  = parse T remain
-                               (r2, remain'') = parse Eprime remain'
-                           in (r1 && r2, remain'')
-    | otherwise = (True, token:remain)
-
-parse Eprime x = (True, x)
-
-parse T input = 
+parseTable :: Symbol -> Symbol -> [Symbol] 
+parseTable topSymbol token = 
     let 
-        (r1, remain)  = parse F input
-        (r2, remain') = parse Tprime remain
-    in (r1 && r2, remain')
-
-parse Tprime (token:remain)
-    | token == TokenMul = let 
-                              (r1, remain')  = parse F remain
-                              (r2, remain'') = parse Tprime remain'
-                          in (r1 && r2, remain'')
-    | otherwise = (True, token:remain)
-
-parse Tprime x = (True, x)
-
-parse F (token:remain)
-    | token == TokenLParen = let 
-                                 (r1, remain') = parse E remain
-                             in case head remain' of TokenRParen -> (True, remain')
-    | token == TokenTypeInt = (True, remain)
-    | otherwise = (False, token:remain)
-
-parse F x = (True, x)
-
+        production = lookup topSymbol parseTable
+        grammarRule = lookup token production
+        lhs = tail $ grammar !! grammarRule
+    in 
+        lhs
