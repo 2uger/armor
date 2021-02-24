@@ -1,62 +1,59 @@
-import qualified Data.Map as Map
+import ParserTypes
 
-data Symbol = Symbol String
+import Data.Map as Map (Map, member, lookup, insertWith)
+import Data.Set as Set (Set, fromList)
 
-grammar = Map.fromList [
-    (Symbol "funcSt", (Symbol "TokenPlus", Symbol "NonTerm")),
-    (Symbol "NonTerm", (Symbol "TOKENNNNS", Symbol "NonTerm"))
-]
 
--- List of terminals(tokens) to make differ between 
--- production and terminals, because symbol represent both
-tokens = [Symbol "+", Symbol "ID"]
+data FirstSetMap = FirstSetMap (Data.Map.Map NonTerminal (Set Terminal)) deriving (Show, Read)
 
-nonTerminals = [Symbol "funcSt"]
+--
+-- Utilities
+--
+getFirstSet :: NonTerminal -> FirstSetMap -> Set.Set Terminal
+getFirstSet nonTerminal firstMap = f $ Map.lookup nonTerminal firstMap 
+  where 
+    f Nothing = Set.Set.empty
+    f (Just set) = set
 
-firstSymbolSet :: Map k v -> Map k v -> Map k v 
-firstSymbolSet grammar firstSymbSet = 
-    let 
-        firstSymbSet' = firstSymbolSetTokens firstSymbSet
-        firstSymbSet'' = throughGrammar firstSymbSet' grammar
-    in 
-        firstSymbSet''
+mergeIntoFirstSet :: FirstSetMap -> NonTerminal -> FirstSet -> FirstSetMap
+mergeFirstSet map nonTerm newSet = Map.insertWith Set.union nonTerm newSet map
 
-throughGrammar :: Map k v -> (k, v) -> Map k v
-throughGrammar firstSymbSet (grammarRule:grammar) = 
-    let 
-        lhs = head grammarRule
-        rhs = tail grammarRule
-        rhsSet = first rhs firstSymbSet
-    in
-        rhsSet:throughGrammar firstSymbSet grammar 
+getNonTerminals :: Grammar -> Set NonTerminal
 
-throughGrammar firstSymbSet [] = firstSymbSet
- 
--- Iterate through rhs of current symbol
-throughRhs (symbol:rest) firsSymbSet
-    | symbol `elem` tokens = firstSymbSet[symbol]
-    | symbol `elem` nonTerminals = 
-                        let
-                            firstSet = first symbol firstSymbSet
-                        in 
-                            firstSet:throughRhs rest firstSymbSet
+-- 
+-- Create first set for current grammar
+--
+firstSet :: Grammar -> FirstSetMap
+firstSet (grammarRule:remain) = first grammar (firstInit grammar)
+  where
+    -- Init empty sets for all non terminals
+    firstInit :: Grammar -> FirstSetMap
+    firstInit grammar = FirstSetMap $ 
+        Map.fromList $ fmap f $ Set.toList $ getNonTerminals grammar
+      where 
+        f nt = (nt, Set.empty)
 
--- Recursively call first on symbol to find his firstSet
-first :: [Symbol] -> Map k v -> [(k, [v])]
-first symbol firstSymbSet = 
-    | symbol `elem` tokens = firstSymbSet[symbol]
-    | symbol `elem` nonTerminals = 
-                            let 
-                                rhs = grammar[symbol]
-                            in case of (isEmptyString symbol firstSymbSet) 
-                                   True -> (firstSet(symbol) - E) : first (head rhs) firstSymbSet
-                                   False -> firstSymbSet
-    |otherwise = False
+    -- Add Empty string for First set of every symbols
+    firstEmptyString :: Grammar -> FirstSetMap
 
--- Will check if E in first set of that symbol
-isEmptyString 
+    -- Add terminals if it's first symbol in rhs 
+    firstTerminal :: Grammar -> FirstSetMap
 
-first [] firstSet = firstSet
+    first :: Grammar -> FirstSetMap -> FirstSetMap
+    first (rule:grammar) firstSet = 
+      where 
+        firstRhs :: Rule -> Set Terminal
+        firstRhs Rule x (yi:y) = 
+            | yi == Right terminal = Set.singleton terminal
+            | yi == Left nonterminal = if Set.member Epsilon firstOfNt
+                                       then Set.Union termsForY rirstRhs Rule x y
+                                       else termsForY
+          where
+            firstOfNt = getFirstSet nonterminal firstSet 
+            termsForY = Set.delete Epsilon firstOfNt
+
+
+
 
 followSet :: Map k v -> Map k v -> Map k v
 followSet grammar follow = 
