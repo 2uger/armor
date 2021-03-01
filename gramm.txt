@@ -1,0 +1,4 @@
+program   :: declList
+declList  :: decl declList
+declList  :: decl declList | 'E'
+decl      :: varDecl | funcDecl

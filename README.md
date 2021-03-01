@@ -1,8 +1,8 @@
-# Compiler for C
-Start exciting journey. Use Haskell for that(pattern matching, functional language...).
+# Compiler for C-ish language
+Use Haskell for that(pattern matching, functional language...).
 Start from basic model of compiler and write module after module.
 Implement full C compiler is hard as we know...
-The goal is to be able to parse code such that:
+The goal is to be able to compile code such that:
 > int/void main(int args) {
 >   int m = 2;
 >   int p[3] = {4, 2, 8};
@@ -25,12 +25,11 @@ Basic structure is:
     * Context free grammar, Parser types(TD, BU), types of grammar itself.
     * TopDown vs BottomUp 
     * LL vs LR
-    * LL is easy to write, but harder to build(left recursion and prefixes)
-    * Build SLR parser:
-        - Create LR(0) automaton
+    * Build LL(1) parser:
         - Find follow and first
         - Create Parse Table from this
         - Write parser(stack, parse table, parser itself)
+        - Make right grammar for that(non-determenistic, lack of left recursion)
   - Semantic analyzer(It's all about semantic correctness)
   - Intermediate code representation
   - Code optimizer

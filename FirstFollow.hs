@@ -6,6 +6,9 @@ import Data.Set as Set (Set, fromList)
 
 data FirstSetMap = FirstSetMap (Data.Map.Map NonTerminal (Set Terminal)) deriving (Show, Read)
 
+grammar = Grammar [Rule Start "program" [[Terminal "funcDecl", Terminal "varDecl"], [Epsilon]],
+                   Rule NTerm "funcDecl" [[NTerm "block", Terminal "+"]]]
+
 --
 -- Utilities
 --

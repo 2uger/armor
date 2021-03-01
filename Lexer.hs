@@ -12,7 +12,6 @@ data Token = TokenPlus
            | TokenMinus String
            | TokenEqual String
            | TokenMul 
-           | TokenInt 
            | TokenLParen 
            | TokenRParen
            | TokenID 
@@ -30,13 +29,17 @@ printResults :: [Token] -> String
 printResults [] = error "Empty List!"
 printResults (x:xs)= (show x ++ " | ") ++ printResults xs
 
+removeWhiteSpace :: [Token] -> [Token]
+removeWhiteSpace [] = []
+removeWhiteSpace tokens = [token | token <- tokens, token /= TokenWhiteSpace]
+
 parseTokens :: String -> [Token]
 parseTokens [] = []
 parseTokens input = 
         let 
             (token, remain) = driveTable 0 "" input
         in 
-            token : parseTokens remain
+            removeWhiteSpace $ token : parseTokens remain
 
 -- By state and next char it detect if it correct and next state
 driveTable :: Int -> String -> String -> (Token, String)

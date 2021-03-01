@@ -12,25 +12,34 @@ parse_table = {0: {TokenPlus : ('shift', 3),
                3: {TokenEqual: ('reduce', 'E', 1)}
               }
 
-class Automaton():
+class CFG():
     def __init__(self):
         pass
 
-def follow(grammar, symbol):
-    pass
-def first(grammar, symbol):
-    pass
+    def follow(self, grammar, symbol):
+        pass
 
-def create_parse_table(automaton):
-    for state in automaton.states:
-        if terminal after dot:
-            parse_table[state] = {terminal: ('shift', automaton.next_state(state, terminal)
-        else if Nonterminal after dot:
-            parse_table[state] = {Nonterminal: {'goto', automaton.next_state(state, Nonterminal)
-        
-        for item in state.items:
-            if item == nothing after dot:
-                parse_table[state] = {before_dot: {'reduce', automaton.prev_state(state, prev Non terminal)}}
+    def first(self, grammar, symbol):
+        pass
+
+    def lr0_automaton(self):
+        pass
+
+    def create_parse_table(automaton):
+        for state in automaton.states:
+            if terminal after dot:
+                parse_table[state] = {terminal: ('shift', automaton.next_state(state, terminal)
+            else if Nonterminal after dot:
+                parse_table[state] = {Nonterminal: {'goto', automaton.next_state(state, Nonterminal)
+            
+            for item in state.items:
+                if item == nothing after dot:
+                    parse_table[state] = {before_dot: {'reduce', automaton.prev_state(state, prev Non terminal)}}
+
+
+class Automaton():
+    def __init__(self):
+        pass
 
 class Parser():
     def __init__(self, tokens):

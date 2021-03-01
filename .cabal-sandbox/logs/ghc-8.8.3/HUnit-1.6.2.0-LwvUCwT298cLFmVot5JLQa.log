@@ -1,0 +1,12 @@
+cabal: Entering directory '/tmp/cabal-tmp-41188/HUnit-1.6.2.0'
+Configuring HUnit-1.6.2.0...
+Preprocessing library for HUnit-1.6.2.0..
+Building library for HUnit-1.6.2.0..
+[1 of 6] Compiling Paths_HUnit      ( dist/dist-sandbox-60882eab/build/autogen/Paths_HUnit.hs, dist/dist-sandbox-60882eab/build/Paths_HUnit.o )
+[2 of 6] Compiling Test.HUnit.Lang  ( src/Test/HUnit/Lang.hs, dist/dist-sandbox-60882eab/build/Test/HUnit/Lang.o )
+[3 of 6] Compiling Test.HUnit.Base  ( src/Test/HUnit/Base.hs, dist/dist-sandbox-60882eab/build/Test/HUnit/Base.o )
+[4 of 6] Compiling Test.HUnit.Terminal ( src/Test/HUnit/Terminal.hs, dist/dist-sandbox-60882eab/build/Test/HUnit/Terminal.o )
+[5 of 6] Compiling Test.HUnit.Text  ( src/Test/HUnit/Text.hs, dist/dist-sandbox-60882eab/build/Test/HUnit/Text.o )
+[6 of 6] Compiling Test.HUnit       ( src/Test/HUnit.hs, dist/dist-sandbox-60882eab/build/Test/HUnit.o )
+Installing library in /home/thuger/Oleg/Programming/Projects/Compiler/.cabal-sandbox/lib/x86_64-linux-ghc-8.8.3/HUnit-1.6.2.0-LwvUCwT298cLFmVot5JLQa
+cabal: Leaving directory '/tmp/cabal-tmp-41188/HUnit-1.6.2.0'
