@@ -10,22 +10,24 @@ module Parser where
 
 -}
 
-import ParseGrammar (parseGrammar, )
---import FirstFollow (firstSymbolSet, followSymbolSet, )
+import GrammarParser
+import FirstFollow
+import ParserTypes
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 --import TableDrive ()
 
-import System.IO
 --------------Create grammar--------------------
 
 grammarFile = "grammar.txt"
 
-main = mainFunc
-
-mainFunc :: IO ()
-mainFunc = do
-         grammarText <- readFile grammarFile
-         let
-             grammar = parseGrammar grammarText
-             firstSet = firstSymbolSet grammar
-         putStrLn $ show grammar
+--main = mainFunc
+--
+--mainFunc :: IO ()
+--mainFunc = do
+--         grammarText <- readFile grammarFile
+--         let
+--             grammar = parseGrammar grammarText
+--             firstSet = firstSymbolSet grammar
+--         putStrLn $ show grammar
 

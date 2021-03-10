@@ -1,33 +1,33 @@
 program   :: declList
-declList  :: decl declList'
-declList' :: decl declList' | 'E'
+declList  :: decl declListN
+declListN :: decl declListN | 'E'
 decl      :: varDecl | funcDecl
 
 #+
-varDecl       :: typeSpec varDeclList;
-scopedVarDecl :: static typeSpec varDeclList; | typeSpec varDeclList; 
-typeSpec      :: INT | BOOL | CHAR
-varDeclList   :: varDeclInit varDeclList'
-varDeclList'  :: E | , varDeclInit varDeclList'
-varDeclInit   :: varDeclId | varDeclId: simpleExpr
-varDeclId     :: ID | ID [NUMCONST]
+varDecl       :: typeSpec varDeclList ';'
+scopedVarDecl :: 'static' typeSpec varDeclList ';' | typeSpec varDeclList ';' 
+typeSpec      :: 'INT' | 'BOOL' | 'CHAR'
+varDeclList   :: varDeclInit varDeclListN
+varDeclListN  :: 'E' | ',' varDeclInit varDeclListN
+varDeclInit   :: varDeclId | varDeclId ':' simpleExpr
+varDeclId     :: 'ID' | 'ID' '[' NUMCONST ']'
 
 #+
-funcDecl     :: typeSpec ID ( parms ) stmt
-parms        :: parmList | E
-parmList     :: parmTypeList parmList'
-parmList'    :: E | , parmTypeList parmList'
+funcDecl     :: typeSpec 'ID' '(' parms ')' stmt
+parms        :: parmList | 'E'
+parmList     :: parmTypeList parmListN
+parmListN    :: 'E' | ',' parmTypeList parmListN
 parmTypeList :: typeSpec parmId
-parmId       :: ID | ID[]
+parmId       :: 'ID' | 'ID' '[' ']'
 
 #-
 stmt         :: exprStmt | compoundStmt | iterStmt | returnStmt | breakStmt 
-exprStmt     :: expr; | ;
-compoundStmt :: { localDecls stmtList }
-stmtList     :: stmtList stmt | E
-localDecls   :: localDecls scopedVarDecl | E
-iterStmt     :: while(simpleExpr) stmt
-returnStmt   :: return ; | return exp ;
+exprStmt     :: expr ';' | ';'
+compoundStmt :: '{' localDecls stmtList '}'
+stmtList     :: stmtList stmt | 'E'
+localDecls   :: localDecls scopedVarDecl | 'E'
+iterStmt     :: 'while' '(' simpleExpr ')' stmt
+returnStmt   :: 'return' ';' | return exp ';'
 breakStmt    :: break ;
 
 #-
@@ -49,7 +49,3 @@ call        :: ID(args)
 args        :: argsList | E
 argsList    :: argsList , expr | expr
 constant    :: NUMCONSTANT | CHARCONSTANT | STRINGCONSTANT
-
-
-
- 
