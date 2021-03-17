@@ -8,20 +8,6 @@ module Lexer where
 
 import Data.Char
 
-data Token = TokenPlus 
-           | TokenMinus String
-           | TokenEqual String
-           | TokenMul 
-           | TokenLParen 
-           | TokenRParen
-           | TokenID 
-           | TokenTypeInt
-           | TokenSemicolon
-           | TokenNum
-           | TokenWhiteSpace
-           | TokenInvalid String
-           deriving (Show, Eq)
-
 --instance Show Token where
  --   show TokenPlus = "TOKEN PLUS"
 
@@ -64,7 +50,7 @@ nextTokenString tokenStr c remain isConsume
 -- finalState define is current state is final state or not
 finalState :: Int -> String -> (Bool, Token)
 finalState x tokenStr
-        | x == 1    = (True, TokenPlus )
+        | x == 1    = (True, Term "+" )
         | x == 2    = (True, TokenMinus tokenStr)
         | x == 3    = (True, TokenMul )
         | x == 4    = (True, TokenEqual tokenStr)

@@ -9,6 +9,12 @@ import qualified Data.Set as Set
 type FirstSet = Set.Set Terminal
 type FirstSetMap = Map.Map NonTerminal FirstSet
 
+type VisitedFirst = Set.Set (NonTerminal, Bool)
+
+-- Set that show is non terminal could derive to 
+-- empty string
+firstSetEmptyString = Set.fromList [(NTerm "fsdkjf", True)]
+
 --
 -- Utilities
 --
@@ -19,7 +25,7 @@ getNonTerminals [] = Set.empty
 
 -- Insert terminal into first set map of non terminal
 insertIntoFirstSet :: FirstSetMap -> NonTerminal -> Set.Set Terminal -> FirstSetMap
-insertIntoFirstSet firstSet nterm term = Map.insertWith Set.union nterm term firstSet
+insertIntoFirstSet firstSet nterm termSet = Map.insertWith Set.union nterm termSet firstSet
 
 -- Init empty set for all non terminals
 firstSetInit :: Grammar -> FirstSetMap
@@ -38,49 +44,37 @@ getRhsList (prod:remain) nterm
 
 -- Add Empty string into First set of current production
 -- if prod :: 'E' | ...
-firstSetEmptyString :: Grammar -> FirstSetMap -> FirstSetMap
-firstSetEmptyString [] firstSet = firstSet
-firstSetEmptyString (prod:remain) firstSet
-    | [Left Epsilon] `elem` (rhs rule) = firstSetEmptyString remain $ insertIntoFirstSet firstSet prod (Set.singleton Epsilon) 
-    | otherwise = firstSetEmptyString remain firstSet
-  where 
-    prod = lhs rule
+--firstSetEmptyString :: Grammar -> FirstSetMap -> FirstSetMap
+--firstSetEmptyString [] firstSet = firstSet
+--firstSetEmptyString (prod:remain) firstSet
+--    | [Left Epsilon] `elem` (rhs rule) = firstSetEmptyString remain $ insertIntoFirstSet firstSet prod (Set.singleton Epsilon) 
+--    | otherwise = firstSetEmptyString remain firstSet
+--  where 
+--    prod = lhs rule
 
--- Return list of all rhs production for current non terminal
-getRhsList :: Grammar -> NonTerminal -> [[Symbol]]
-getRhsList (prod:remain) nterm
-    | lhs prod == nterm = [rhs prod] : getRhsList remain nterm
-    | otherwise = getRhsList remain nterm
+first :: [Symbol] -> FirstSetMap
+first rhs = internalFirst visitedFirst rhs
+  where
+      visitedFirst = Set.map f $ getNonTerminals grammar 
+      f = \x -> (x, False)
 
-
-firstSetRhs :: Grammar -> FirstSetMap -> FirstSetMap
-first (rule:grammar) firstSet = 
-  where 
-    firstRhs :: Rule -> Set.Set Terminal
-    firstRhs Rule lhs (X:b) = 
-        case X of
-          Right terminal = Set.singleton terminal
-          Left nterm = if !visitedFirst(X)
-                       then Set.Union map (firstRhs lhs) rhsList
-                       else case symbolDerivesEmpty(X) of
-                              True -> firstRhs b
-                              False -> Set.empty
-
-      where
-          rhsList = getRhsList grammar nterm
-
-internalFirst :: [Symbol] -> Set.Set Terminal
-internalFirst (X:b) = 
+internalFirst :: VisitedFirst -> [Symbol] -> Set.Set Terminal
+internalFirst visitedFirst (X:b)= 
+    -- If X is empty = return Empty set
     case X of
       Right terminal = Set.singleton terminal
-      Left nterm = if !visitedFirst(X)
-                   then Set.Union map (firstRhs lhs) rhsList
-                   else case symbolDerivesEmpty(X) of
-                          True -> firstRhs b
-                          False -> Set.empty
-
+      Left nterm = if !(isVisited X)
+                   then map (Set.union Set.emptySet) 
+                        $ map internalFirst (makeVisitedTrue nterm) rhsList 
+                   else if symbolDerivesEmpty
+                        then Set.union Set.emptySet 
+                                       $ internalFirst (makeVisited nterm) b
   where
-          rhsList = getRhsList grammar nterm
+    rhsSymbolList = getRhsSymbolList grammar nterm
+    isVisited nterm = Set.member (nterm, True) visitedFirst
+    makeVisitedTrue nterm = Set.insert (nterm, True) 
+                            $ Set.delFromSet visitedFirst (nterm, False)
+    symbolDerivesEmpty nterm = 
 
 --
 --

@@ -1,7 +1,6 @@
 module Parser where
 import Lexer 
 
-data Symbol = S | E | Eprime | T | Tprime | F | Terminal Token
 
 parser :: [Token] -> Bool
 parser [] = False
@@ -10,8 +9,14 @@ parser tokens =
         (isOk, _) = parse S tokens
     in isOk
 
-parse :: Symbol -> [Token] -> (Bool, [Token])
-parse S input = 
+parse Programm input = 
+
+parse FuncDecl input = 
+parse :: NonTerminal -> [Token] -> (Bool, [Token])
+parse (NTerm x) input = 
+    | x == gt
+    |
+    |
     let 
         (r1, remain) = parse E input 
     in (r1, remain) 
@@ -23,7 +28,7 @@ parse E input =
     in (r1 && r2, remain')
 
 parse Eprime (token:remain)
-    | token == TokenPlus = let 
+    | token == TermPlus = let 
                                (r1, remain')  = parse T remain
                                (r2, remain'') = parse Eprime remain'
                            in (r1 && r2, remain'')

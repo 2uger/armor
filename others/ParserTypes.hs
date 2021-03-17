@@ -8,6 +8,6 @@ data NonTerminal = NTerm String deriving (Show, Eq, Ord)
 
 type Symbol = Either Terminal NonTerminal
 
-data Production = Production { lhs :: NonTerminal, rhs :: [Symbol] } deriving (Show) 
+data Production = Production { _lhs :: NonTerminal, _rhs :: [Symbol] } deriving (Show) 
 
 type Grammar = [Production]

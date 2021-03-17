@@ -28,10 +28,10 @@ stmtList     :: stmtList stmt | 'E'
 localDecls   :: localDecls scopedVarDecl | 'E'
 iterStmt     :: 'while' '(' simpleExpr ')' stmt
 returnStmt   :: 'return' ';' | return exp ';'
-breakStmt    :: break ;
+breakStmt    :: break ';'
 
 #-
-expr         :: mutable = expr | mutable = expr | mutable ++ | mutable -- | simpleExpr
+expr         :: mutable '=' expr | mutable '=' expr | mutable '++' | mutable '--' | simpleExpr
 simpleExpr   :: simpleExpr OR andExpr | and Exp
 andExpr      :: andExpr and unaryRelExpr | unaryRelExpr
 unaryRelExpr :: NOT unaryRelExpr | relExpr
@@ -39,13 +39,13 @@ unaryRelExpr :: NOT unaryRelExpr | relExpr
 relExpr :: sumExpr
 sumExpr :: sumExpr sumOp mulExpr | mulExpr
 mulExpr :: mulExpr mulOp factor | factor
-sumOp   :: + | -
-mulOp   :: * | / | %
+sumOp   :: '+' | '-'
+mulOp   :: '*' | '/' | '%'
 
 factor      :: mutable | immutable 
-mutable     :: ID | ID[expr]
-immutable   :: ( expr ) | call | constant
-call        :: ID(args)
-args        :: argsList | E
-argsList    :: argsList , expr | expr
-constant    :: NUMCONSTANT | CHARCONSTANT | STRINGCONSTANT
+mutable     :: 'ID' | 'ID' '[' expr ']'
+immutable   :: '(' expr ')' | call | constant
+call        :: 'ID' '(' args ')'
+args        :: argsList | 'E'
+argsList    :: argsList ',' expr | expr
+constant    :: 'NUMCONSTANT' | 'CHARCONSTANT' | 'STRINGCONSTANT'
