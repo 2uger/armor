@@ -2,15 +2,7 @@
 Use Haskell for that(pattern matching, functional language...).
 Start from basic model of compiler and write module after module.
 Implement full C compiler is hard as we know...
-The goal is to be able to compile code such that:
-> int/void main(int args) {
->   int m = 2;
->   int p[3] = {4, 2, 8};
->   m = p[0] + p[2];
->   while (1) {
->       printf("Symbol n%d is %d\n", p[2]);
->       break;
->   return m;
+So it's implement simple grammar in grammar.txt
 
 Basic structure is:
   - Lexical analyzer(simple tokens analyz)
@@ -30,6 +22,9 @@ Basic structure is:
         - Create Parse Table from this
         - Write parser(stack, parse table, parser itself)
         - Make right grammar for that(non-determenistic, lack of left recursion)
+    * Build recursion descent parser
+    * AST vs parse tree(concrete)
+    * Parse tree could be represented as production, AST not!!!
   - Semantic analyzer(It's all about semantic correctness)
   - Intermediate code representation
   - Code optimizer

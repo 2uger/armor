@@ -1,15 +1,12 @@
 {- 
-    Scanner for tokens like:
-    (+, -, =, *, id)
-    Based on simple DFA without backtracking
+    Scanner for tokens from grammar.txt 
+    Based on simple DFA by table driven approach
 -}
 
 module Lexer where
 
 import Data.Char
 
---instance Show Token where
- --   show TokenPlus = "TOKEN PLUS"
 
 printResults :: [Token] -> String
 printResults [] = error "Empty List!"
