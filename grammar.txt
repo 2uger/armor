@@ -10,7 +10,7 @@ typeSpec      :: 'INT' | 'BOOL' | 'CHAR'
 varDeclList   :: varDeclInit varDeclListN
 varDeclListN  :: 'E' | ',' varDeclInit varDeclListN
 varDeclInit   :: varDeclId | varDeclId ':' simpleExpr
-varDeclId     :: 'ID' | 'ID' '[' NUMCONST ']'
+varDeclId     :: 'ID' | 'ID' '[' 'NUMCONST' ']'
 
 #+
 funcDecl     :: typeSpec 'ID' '(' parms ')' stmt
