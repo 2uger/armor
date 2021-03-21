@@ -3,64 +3,31 @@
  - Think about representation of Parse tree foa
  -}
 
-data Terminal = TermEpsilon 
-              | TermBackQuote 
-              | TermINT 
-              | TermBOOL
-              | TermCHAR
-              | TermComma
-              | TermDot... 
-
-data NonTerminal = Program 
-                 | DeclList 
-                 | DeclListN 
-                 | VarDecl
-                 | ScopedVarDecl 
-                 | TypeSpec
-                 | 
-
-
-
--- Parse tree 
-data PT = EmptyTree 
-        | NodeProgramm ParseTree 
-        | NodeDeclList ParseTree
-        | NodeDeclListN ParseTree ParseTree
-        | NodeDecl ParseTree
-        | NodeTypeSpec Terminal
-
-
-treeInsert :: ParsTree -> ParseTree -> ParseTree
-treeInsert 
-treeInsert NodeDecl t NodeDeclList l r = 
-    | node == NodeDecl = NodeDeclList node r
-    | node == NodeDeclListN = NodeDeclList l node
-    | otherwise = NodeDeclList l r
-
-
 type FirstSet = Set.Set Terminal
 type FirstSetMap = Map.Map NonTerminal FirstSet
+
+type ParseOutput = ([Terminal], Bool, PT)
 
 -- Check if input token is one of nonterminal first set
 inFirstSet :: NonTerminal -> Terminal -> Bool
 inFirstSet nterm term = 
 
 
-parse :: NonTerminal -> [Terminal] -> ([Terminal], Bool)
-parse Program ts@(t:stream) = 
-    let (stream', b) = parse DeclList ts
-    in (stream', b) 
+parse :: NonTerminal -> [Terminal] -> PT -> ParseOutput
+parse Program ts@(t:stream) (NodeProgramm pt) = 
+    let (stream', b, pt') = parse DeclList ts
+    in (stream', b, NodeProgramm pt') 
 
 parse DeclList ts@(t:stream) = 
-    let (stream', b1) = parse Decl ts
-        (stream'', b2) = parse DeclListN stream'
-    in (stream'', b1 && b2)
+    let (stream', b1, pt') = parse Decl ts
+        (stream'', b2, pt'') = parse DeclListN stream'
+    in (stream'', b1 && b2, NodeDeclList pt' pt'')
 
 parse DeclListN ts@(t:stream)
     | inFirstSet DeclListN t = 
-        let (stream', b1) = parse Decl stream
-            (stream'', b2) = parse DeclListN stream'
-        in (stream'', b1 && b2)
+        let (stream', b1, pt') = parse Decl stream
+            (stream'', b2, pt'') = parse DeclListN stream'
+        in (stream'', b1 && b2, NodeDeclListN pt' pt'')
     | otherwise = (ts, True)
 
 -- ERRROROROOR
@@ -124,20 +91,18 @@ parse VarDeclId ts@(t:nt:stream) =
   where 
     matchLongStr = take 2 stream == [TokenNumConst, TokenRParen] 
 
-parse ScopedVarDecl ts@(t:stream)
-                                     
-                               
-parse VarDecl ts@(t:stream) = 
-    let 
-        stream' = parse TypeSpec ts
-        stream'' = parse VarDeclList stream'
-    in case of
-           TokenBackQuote -> stream'' 
+parse FuncDecl ts@(t:stream) = 
+    let
+        (b1, stream') = parse TypeSpec ts
+        (b2, stream'') = (head stream' == TokenID) (tail stream')
+        (b3, stream''') = (head stream'' == TokenLParen) (tail stream'')
+        (b4, stream'''') = parse Parms stream'''
+        (b5, stream''''') = (head stream'''' == TokenRParen) (tail stream'''')
+        (b6, stream'''''') = parse Stmt stream'''''
+    in (b1 && b2 && b3 && b4 && b5 && b6, stream'''''')
 
-parse TypeSpec ts@(t:stream) = 
-    | t == TokenInt = (True, stream)
-    | t = TokenBool = (True, stream)
-    | t = TokenChar = (True, stream)
-    | otherwise = (False, 
-
-parse DeclListN
+parse Parms ts@(t:st) =
+    | inFirstSet Parms t = 
+        let (b1, st', pt) = parse ParmList ts
+        in (b1, st', NodeParms pt)
+    | otherwise = (True, ts, NodeParms TermEpsilon)
