@@ -2,3 +2,8 @@ sideMaterials/
 *.hi
 *.o
 *.swp
+.cabal-sandbox/
+dist-newstyle/
+CHANGELOG.md
+Compiler.cabal
+cabal.sandbox.config

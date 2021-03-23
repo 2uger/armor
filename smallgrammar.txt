@@ -1,2 +1,0 @@
-prog :: term | 'nfsd'
-func :: re | 'fds' fsdf
