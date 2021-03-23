@@ -17,7 +17,7 @@ parseGrammar grammarText = concat
     filterGrammar :: [String] -> [String]
     filterGrammar = filter filterComments . filter filterEmpty
       where 
-        filterEmpty = \x -> x /= ""
+        filterEmpty    = \x -> x /= ""
         filterComments = \x -> head x /= '#' 
     parseProduction :: Parsec.Parsec String () [Production]
     parseProduction = do
@@ -28,7 +28,6 @@ parseGrammar grammarText = concat
       where
         separator = Parsec.spaces >> Parsec.string "::" >> Parsec.spaces
         createProduction lhs x = Production (NTerm lhs) x
-
         parseRhs :: Parsec.Parsec String () [[Symbol]] 
         parseRhs =  Parsec.sepBy parseRhsPiece rhsSep
           where 
@@ -53,7 +52,7 @@ parseGrammar grammarText = concat
                     Parsec.string "'"
                     case term of
                         "E" -> return (Left Epsilon)
-                        _ -> return (Left $ Term term)
+                        _   -> return (Left $ Term term)
                   where
                     parseSign = Parsec.many1 $ Parsec.oneOf ":%&*{},;/[]()"
                     parseWord = Parsec.many1 Parsec.letter
