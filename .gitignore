@@ -2,6 +2,8 @@ sideMaterials/
 *.hi
 *.o
 *.swp
+*.gv
+*.ps
 .cabal-sandbox/
 dist-newstyle/
 CHANGELOG.md
