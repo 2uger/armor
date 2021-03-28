@@ -1,3 +1,9 @@
+# TODO:
+* Think about right representation of intermediate info
+  between parser function(return code or error...)
+* After write parser through the end
+* Output is parse Tree via GRAPHVIZ
+* Represent all nodes in ast(try to build one)
 # Compiler for C-ish language
 Use Haskell for that(pattern matching, functional language...).
 Start from basic model of compiler and write module after module.
