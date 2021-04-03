@@ -7,6 +7,8 @@ module Lexer where
 
 import Data.Char
 
+import ParserTypes 
+
 
 printResults :: [Token] -> String
 printResults [] = error "Empty List!"

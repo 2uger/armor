@@ -30,14 +30,14 @@ stmtList     :: stmt stmtListN
 stmtListN    :: stmt | 'E'
 
 ORIG:
-localDecls   :: localDecls scopedVarDecl | 'E'
+localDecl   :: localDecl scopedVarDecl | 'E'
 CHANGE:
-localDecls   :: scopedVarDecl localDeclsN | 'E'
-localDeclsN  :: scopedVarDecl localDeclsN | 'E'
+localDecl   :: scopedVarDecl localDeclN | 'E'
+localDeclN  :: scopedVarDecl localDeclN | 'E'
 
 iterStmt     :: 'while' '(' simpleExpr ')' stmt
-returnStmt   :: 'return' ';' | return exp ';'
-breakStmt    :: break ';'
+returnStmt   :: 'return' ';' | 'return' exp ';'
+breakStmt    :: 'break' ';'
 
 ***
 expr         :: mutable '=' expr | mutable '=' expr | mutable '++' | mutable '--' | simpleExpr

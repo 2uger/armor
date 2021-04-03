@@ -2,6 +2,8 @@ module ParseTree where
 
 import ParserTypes
 
+-- Some production could produce 'E'(empty string)
+-- EmptyTree will represent that sign
 data ParseTree = EmptyTree 
                | NodeProgramm ParseTree 
                | NodeDeclList ParseTree ParseTree
@@ -15,12 +17,50 @@ data ParseTree = EmptyTree
                | NodeVarDeclListN Terminal ParseTree ParseTree
                | NodeVarDeclInit ParseTree Terminal ParseTree
                | NodeVarDeclId Terminal Terminal Terminal Terminal
+
+               | NodeFuncDecl ParseTree Terminal Terminal ParseTree Terminal ParseTree
+               | NodeParms ParseTree
+               | NodeParmList Terminal ParseTree ParseTree
+               | NodeParmTypeList ParseTree ParseTree
+               | NodeParmId Terminal Terminal Terminal
+
+               | NodeStmt ParseTree
+               | NodeExprStmt ParseTree Terminal
+               | NodeCompoundStmt Terminal ParseTree ParseTree Terminal
+               | NodeStmtList ParseTree ParseTree
+               | NodeStmtListN ParseTree
+               | NodeLocalDecl ParseTree ParseTree
+               | NodeLocalDeclN ParseTree ParseTree
+               | NodeIterStmt Terminal Terminal ParseTree Terminal ParseTree
+               | NodeReturnStmt Terminal ParseTree Terminal
+               | NodeBreakStmt Terminal Terminal
+
+               | NodeExpr ParseTree Terminal ParseTree
+               | NodeSimpleExpr ParseTree ParseTree
+               | NodeSimpleExprN Terminal ParseTree ParseTree
+               | NodeAndExpr ParseTree ParseTree
+               | NodeAndExprN Terminal ParseTree ParseTree
+               | NodeUnaryRelExpr Terminal ParseTree
+
+               | NodeRelExpr ParseTree
+               | NodeSumExpr ParseTree ParseTree
+               | NodeSumExprN ParseTree ParseTree ParseTree
+               | NodeMulExpr ParseTree ParseTree ParseTree
+               | NodeSumOp Terminal
+               | NodeMulOp Terminal
+               | NodeFactor ParseTree
+               | NodeMutable Termina
+               | NodeImmutable
+               | NodeCall
+               | NodeArgs
+               | NodeArgsList
+               | NodeConstant
                deriving (Show, Read)
 
 -- It's a nice util called graphviz(gnu package)
 -- Using simple language DOT it will help to represent
 -- whole tree(both of them, AST and parse tree)
--- Output looks like this:
+-- Input of DOT-land looks like this:
 -- graph G {
 --  NodeProgram -> NodeDeclList
 --  NodeDeclList -> NodeDecl
