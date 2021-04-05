@@ -51,7 +51,8 @@ data StatementBlock a = EmptyStmt | Stmt a StatementBlock a
 
 
 -- ****** Expression ******
-data Expression = ExprName String 
+data Expression = ExprEmpty
+                | ExprName String 
                 | ExprValue Value 
                 | ExprAdd { Left :: Expression,
                             Right :: Expression }

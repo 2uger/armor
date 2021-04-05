@@ -13,7 +13,7 @@ type FirstSetMap = Map.Map NonTerminal FirstSet
 -- Every parse func will return bool flag showing
 -- is parsing ok or not, string will show error output
 -- if error occured
-type ParseOutput = ([Terminal], Bool, String, ParseTree)
+type ParseOutput = ([Terminal], Bool, [String], ParseTree)
 
 -- Check if input token is one of nonterminal first set
 inFirstSet :: NonTerminal -> Terminal -> Bool
@@ -23,50 +23,50 @@ inFirstSet nterm term = False
 
 parse :: NonTerminal -> [Terminal] -> ParseOutput
 parse Program ts = 
-    let (stream', b, err, ptDeclList) = parse DeclList ts
-    in case b of
-           True  -> (stream', b, "", NodeProgramm ptDeclList) 
-           False -> (stream', b, err, NodeProgramm ptDeclList)
+    let (stream', status, err, ptDeclList) = parse DeclList ts
+    in case status of
+           True  -> (stream', status, [""], NodeProgramm ptDeclList) 
+           False -> (stream', status, err, NodeProgramm ptDeclList)
 
 parse DeclList ts =
-    let (stream', b, err, ptDecl) = parse Decl ts
-        (stream'', b1, err1, ptDeclListN) = parse DeclListN stream'
-    in (stream'', b && b1, err ++ err1, NodeDeclList ptDecl ptDeclListN)
+    let (stream', status', err', ptDecl) = parse Decl ts
+        (stream'', status'', err'', ptDeclListN) = parse DeclListN stream'
+    in (stream'', status' && status'', err' ++ err'', NodeDeclList ptDecl ptDeclListN)
 
 parse DeclListN ts@(t:stream)
     | inFirstSet DeclListN t = 
-        let (stream', b1, err, ptDecl) = parse Decl ts
-            (stream'', b2, err1, ptDeclListN) = parse DeclListN stream'
-        in (stream'', b1 && b2, err + err1,  NodeDeclListN ptDecl ptDeclListN)
+        let (stream', status', err', ptDecl) = parse Decl ts
+            (stream'', status'', err'', ptDeclListN) = parse DeclListN stream'
+        in (stream'', status' && status'', err' + err'',  NodeDeclListN ptDecl ptDeclListN)
     | otherwise = (ts, True, "", NodeDeclListN EmptyTree EmptyTree)
 
 parse Decl ts = 
-    let (stream', b1, er, ptVarDecl) = parse VarDecl ts
-    in case b1 of
-           True -> (stream', b1, "",  NodeDecl ptVarDecl)
-           _    -> let (stream'', b2, er, ptFuncDecl) = parse FuncDecl stream'
-                   in (stream'', b2, er, NodeDecl ptFuncDecl)
+    let (stream', status', err', ptVarDecl) = parse VarDecl ts
+    in case status' of
+           True -> (stream', status', err',  NodeDecl ptVarDecl)
+           _    -> let (stream'', status'', err'', ptFuncDecl) = parse FuncDecl stream'
+                   in (stream'', status'', err'', NodeDecl ptFuncDecl)
 
 parse VarDecl ts = 
-    let (stream', b1, er, ptTS) = parse TypeSpec ts
-        (stream'', b2, er', ptVDL) = parse VarDeclList stream'
+    let (stream', status', err', ptTypeSpec) = parse TypeSpec ts
+        (stream'', status'', err'', ptVarDeclList) = parse VarDeclList stream'
     in case head stream'' of 
-           TermBackQuote -> (tail stream'', True, "", NodeVarDecl ptTS ptVDL TermBackQuote)
+           TermBackQuote -> (tail stream'', True, "", NodeVarDecl ptTypeSpec ptVarDeclList TermBackQuote)
            _             -> (stream'', False, "Missing token back quote", 
-                              NodeVarDecl ptTS ptVDL TermEmpty)
+                              NodeVarDecl ptTypeSpec ptVarDeclList TermEmpty)
 
 parse ScopedVarDecl ts@(t:stream)
     | t == TermStatic = 
-        let (stream', b1, er', pt')    = parse TypeSpec stream
-            (stream'', b2, er'', pt'') = parse VarDeclList stream'
+        let (stream', status', err', ptTypeSpec) = parse TypeSpec stream
+            (stream'', status'', err'', ptVarDeclList) = parse VarDeclList stream'
         in case head stream'' of 
-               TermBackQuote -> (tail stream'', True, "", treeNode TermStatic pt' pt'' TermBackQuote)
+               TermBackQuote -> (tail stream'', True, "", treeNode TermStatic ptTypeSpec ptVarDeclList TermBackQuote)
                _             -> (stream'', False, "Missing token back quote", EmptyTree)
     | otherwise = 
-        let (stream', b1, er', pt') = parse TypeSpec ts
-            (stream'', b2, er'', pt'') = parse VarDeclList stream'
+        let (stream', status', err', ptTypeSpec) = parse TypeSpec ts
+            (stream'', status'', err'', ptVarDeclList) = parse VarDeclList stream'
         in case head stream'' of
-               TermBackQuote -> (tail stream'', True, "", treeNode TermEmpty pt' pt'' TermBackQuote)
+               TermBackQuote -> (tail stream'', True, "", treeNode TermEmpty ptTypeSpec ptVarDeclList TermBackQuote)
                _             -> (stream'', False, "Missing token back quote", EmptyTree)
   where
     treeNode = NodeScopedVarDecl 
@@ -80,45 +80,71 @@ parse TypeSpec ts@(t:stream)
     treeNode = NodeTypeSpec
 
 parse VarDeclList ts@(t:stream)=
-    let (stream', b1, er', pt') = parse VarDeclInit ts
-        (stream'', b2, er'', pt'') = parse VarDeclListN stream' 
-    in (stream'', b1 && b2, "", NodeVarDeclList pt' pt'')
+    let (stream', status', err', ptVarDeclInit) = parse VarDeclInit ts
+        (stream'', status'', err'', ptVarDeclListN) = parse VarDeclListN stream' 
+    in (stream'', status' && status'', err' ++ err'', NodeVarDeclList ptVarDeclInit ptVarDeclListN)
 
 parse VarDeclListN ts@(t:stream)
     | t == TermComma = 
-        let (stream', b1, er', pt') = parse VarDeclInit ts
-            (stream'', b2, er'', pt'') = parse VarDeclListN stream'
-        in (stream'', b1 && b2, er'', NodeVarDeclListN TermComma pt' pt' )
+        let (stream', status', err', ptVarDeclInit) = parse VarDeclInit ts
+            (stream'', status'', err'', ptVarDeclListN) = parse VarDeclListN stream'
+        in (stream'', status' && status'', err' ++ err'', NodeVarDeclListN TermComma ptVarDeclInit ptVarDeclListN )
     | otherwise = (ts, True, "", NodeVarDeclListN TermEmpty EmptyTree EmptyTree)
 
 parse VarDeclInit ts = 
-    let (stream', b1, er, ptVarDeclId) = parse VarDeclId ts
+    let (stream', status', err', ptVarDeclId) = parse VarDeclId ts
     in case head stream' of
-           TermDoubleDot -> let (stream'', b2, er2, ptSimpleExpr) = parse SimpleExpr stream'
-                              in (stream'', b2, er2, treeNode ptVarDeclId TermColon ptSimpleExpr)
-           _             -> (stream', b1, "", treeNode ptVarDeclId TermEmpty EmptyTree)
+           TermDoubleDot -> let (stream'', status'', err'', ptSimpleExpr) = parse SimpleExpr stream'
+                            in (stream'', status'', err' ++ err'', treeNode ptVarDeclId TermColon ptSimpleExpr)
+           _             -> (stream', status', "", treeNode ptVarDeclId TermEmpty EmptyTree)
   where
     treeNode = NodeVarDeclInit
 
 parse VarDeclId ts@(t:nt:stream)
     | t == TermId = case nt of
                          TermLSqBracket -> case matchLongStr of
-                                         True -> (drop 2 stream, True, "", 
-                                                  NodeVarDeclId TermId TermLSqBracket TermNumConst TermRSqBracket)
-                                         _    -> (stream, False, 
-                                                   "Missing tokenNumCons or tokenRParen", 
-                                                   EmptyTree)
-                         _              -> (nt:stream, True, "", NodeVarDeclId TermId TermEmpty TermEmpty TermEmpty)
+                                               True -> (drop 2 stream, True, "", 
+                                                        NodeVarDeclId TermId TermLSqBracket TermNumConst TermRSqBracket)
+                                               False -> (stream, False, 
+                                                         "Missing tokenNumCons or tokenRParen", 
+                                                         EmptyTree)
+                                               _     -> (nt:stream, True, "", NodeVarDeclId TermId TermEmpty TermEmpty TermEmpty)
     | otherwise = (ts, False, "Missing token ID", EmptyTree)
 
   where 
     matchLongStr = (take 2 stream == [TermNumConst, TermRSqBracket])
 
-parse FuncDecl ts = (ts, True, "", EmptyTree)
+parse FuncDecl ts = 
+    let ((t':nt':stream'), status', err', ptTypeSpec) = parse TypeSpec ts
+    in case t' of
+           TermId -> case nt' of
+                         TermLParen -> let ((t'':stream''), status'', err'', ptParms) = parse Parms stream'
+                                       in case t'' of
+                                              TermRParen -> parse Stmt stream''
+                                              _          -> (t'':stream'', False, "Missing right brace in func decl", EmptyTree)
+                           _        -> (nt:stream', False, "Missing left brace in func declaration", EmptyTree) 
+           _      -> (t':nt':stream', False, "Missing ID afte type specification", EmptyTree)
+
+parse Parms ts = 
+    let (stream', status', err', prParmList) = parse ParmList ts
+    in case status' of
+           True -> (stream', status', err', ptParmList)
+           False -> (stream', True, "", EmptyTree)  
+
+
 parse SimpleExpr ts = (ts, True, "", EmptyTree)
 
 parse x [] = ([], True, "", EmptyTree)
 
+parse SumExpr ts = 
+    let (stream', b1, er1, pt, ast) = parse MulExpr ts
+        (stream'', b1, er2, pt, ast2) = parse SumExprN stream'
+    in ExprAdd ast ast2
+
+parse MulExpr ts(t:stream) = 
+    (.., .., .., ExprAdd(ExprValue t, ExprEmpty))
+    
+        
 --parse FuncDecl ts = 
 --    let
 --        (stream', b1, er1, ptTypeSpec) = parse TypeSpec ts
