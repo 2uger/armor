@@ -121,7 +121,8 @@ parse FuncDecl ts =
                          TermLParen -> let ((t'':stream''), status'', err'', ptParms) = parse Parms stream'
                                        in case t'' of
                                               TermRParen -> parse Stmt stream''
-                                              _          -> (t'':stream'', False, "Missing right brace in func decl", EmptyTree)
+                                              _          -> (t'':stream'', False, 
+                                                             "Missing right brace in func decl", EmptyTree)
                            _        -> (nt:stream', False, "Missing left brace in func declaration", EmptyTree) 
            _      -> (t':nt':stream', False, "Missing ID afte type specification", EmptyTree)
 
@@ -131,7 +132,169 @@ parse Parms ts =
            True -> (stream', status', err', ptParmList)
            False -> (stream', True, "", EmptyTree)  
 
+parse ParmList ts = 
+    let (stream', status', err', prParmTypeList) = parse ParmTypeList ts
+        (stream'', status'', err'', prParmListN) = parse ParmListN stream'
+    in (stream'', status' && status'', err' ++ err'', NodeParmList prParmTypeList prParmListN)
 
+parse ParmListN ts@(t:stream) =
+    case t of
+        TermComma -> let (stream', status', err', prParmTypeList) = parse ParmTypeList stream
+                         (stream'', status'', err'', prParmListN) = parse ParmListN stream'
+                     in (stream'', status'  && status'', err' ++ err'', NodeParmListN prParmTypeList prParmListN)
+        _         -> (ts, True, "", EmptyTree)
+
+parse ParmTypeList ts = 
+    let (stream', status', err', prTypeSpec) = parse TypeSpec ts
+        (stream'', status'', err'', prParmId) = parse ParmId stream'
+    in (stream'', status' && status'', err' ++ err'', NodeParmTypeList  prTypeSpec prParmId)
+
+parse ParmId ts@(t:nt:nnt:stream) = 
+    | t == TermId = case nt of
+                        TermLSqBracket -> case nnt of
+                                              TermRSqBracket -> (stream, True, "", NodeParmId t nt nnt)
+                                              _              -> (nnt:stream, False, "Missing right square bracket", NodeParmId t nt EmptyTree)
+                      _              -> (nt:nnt:stream, True, "", NodeParmId t EmptyTree EmptyTree EmptyTree)
+    | otherwise = (ts, False, "Miss match parm id", EmptyTree)
+
+parse Stmt ts 
+    | status' = parse'
+    | status'' = parse''
+    | status''' = parse'''
+    | status'''' = parse''''
+    | status''''' = parse'''''
+    | otherwise = (ts, False, "Failed to parse one of the statement form", EmptyTree)
+  where
+    parse' = parse ExprStmt ts
+    (stream', status', err', ptExprStmt) = parse'
+
+    parse'' = parse CompoundStmt stream'
+    (stream'', status'', err'', prCompoundStmt) = parse''
+
+    parse''' = parse IterStmt stream''
+    (stream''', satus''', err''', prIterStmt) = parse'''
+
+    parse'''' = parse ReturnStmt stream'''
+    (stream'''', status'''', err'''', ptReturnStmt) = parse''''
+
+    parse''''' = parse BreakStmt stream''''
+    (stream''''', status''''', err''''', ptReturnStmt) = parse'''''
+
+parse ExprStmt ts@(t:stream)
+    | status' = case t' of 
+                    TermColon -> (stream', True, "", NodeExprStmt ptExpr t)
+                    _         -> (t':stream', False, "Missing colon after expr", EmptyTree)
+    | otherwise = case t of
+                      TermColon -> (stream, True, "", NodeExprStmt EmptyTree t)
+                      _         -> (ts, False, "Missing colon in stmt", EmptyTree)
+    let (stream', status', err', prExpr) = parse Expr ts
+    in case of
+  where
+    parse' = parse Expr ts
+    ((t':stream'), status', err', prExpr) = parse Expr ts
+
+parse CompoundStmt ts@(t:stream)
+    | t == TermLBrace = case status' of 
+                            True -> case status'' of
+                                        True -> case head stream'' of
+                                                    TermRBrace -> (stream'', True, "", 
+                                                                   NodeCompoundStmt ptLocalDecls ptStmtList)
+                                                    _          -> (stream'', False, 
+                                                                   "Missing right brace after stmt list", EmptyTree)
+                                        _    -> (stream', status'', err'', EmptyTree)
+                            _    -> (stream, status', err', EmptyTree)
+    | otherwise = (ts, False, "Missing left brace in compound statement", EmptyTree)
+  where
+    parse' = parse LocalDecls stream
+    (stream', status', err', ptLocalDecls) = parse'
+
+    parse'' = parse StmtList stream'
+    (stream'', status'', err'', ptStmtList) = parse''
+
+parse StmtList ts =
+    | status' = case status' of
+                    True -> parse''
+                    False -> (stream', False, err'', EmptyTree)
+    | otherwise = (ts, False, err', EmptyTree)
+  where
+    parse' = parse Stmt ts
+    (stream', status', err', ptStmt) = parse'
+
+    parse'' = parse StmtListN stream'
+    (stream'', status'', err'', ptStmtListN) = parse''
+
+parse StmtListN ts
+    | status' = parse'
+    | otherwise = (ts, True, "", NodeStmtListN EmptyTree)
+  where
+    parse' = parse Stmt ts
+    (stream', status', err', ptStmt) = parse'
+
+parse LocalDecl ts
+    | status' = case status'' of
+                    True -> (stream'', True, "", NodeLocalDecl ptScopedVarDecl ptLocalDeclN) 
+                    _    -> (stream', status'', err'', EmptyTree)
+    | otherwise = (ts, True, "", EmptyTree)
+  where
+    parse' = parse ScopedVarDecl ts
+    (stream', status', err', ptScopedVarDecl) = parse'
+
+    parse'' = parse LocadDeclN stream'
+    (stream'', status'', err'', ptLocalDeclN) = parse''
+
+parse LocalDeclN ts
+    | status' = case status'' of
+                    True -> (stream'', True, NodeLocalDecl ptScopedVarDecl ptLocalDeclN) 
+                    _    -> error "Failed to parse LocalDeclN"
+    | otherwise = (ts, True, EmptyTree)
+  where
+    parse' = parse ScopedVarDecl ts
+    (stream', status', ptScopedVarDecl) = parse'
+
+    parse'' = parse LocadDeclN stream'
+    (stream'', status'', ptLocalDeclN) = parse''
+
+parse IterStmt ts@(t:nt:stream)
+    | t == TermWhile = case nt of
+                           TermLParen -> 
+                               case statusSE of
+                                   True -> 
+                                       case head streamSE of
+                                           True -> 
+                                               case statusStmt of
+                                                   True -> (streamStmt, True, 
+                                                            NodeIterStmt t nt ptSimpleExpr (head streamSE) ptStmt)
+                                                   _    -> (ts, False, EmptyTree)
+                                           other-> 
+                                               (ts, False, EmptyTree)
+                                    _   ->
+                                        (ts, False, EmptyTree)
+                            other     ->
+                                (ts, False, EmptyTree)
+    | otherwise = (ts, False, EmptyTree)
+  where
+    parseSE = parse SimpleExpr stream
+    (streamSE, statusSE, ptSimplExpr) = parseSE
+
+    parseStmt = parse Stmt tail streamSE
+    (streamStmt, statusStmt, ptStmt) = parseStmt
+
+parse ReturnStmt ts@(t:nt:stream)
+    | t == TermReturn = case statusExpr of
+                            True -> case head streamExpr of
+                                        TermColon -> (tail streamExpr, True, treeNode t ptExpr (head streamExpr))
+                                        _         -> (ts, False, EmptyTree)
+                            False -> case nt of
+                                         TermColon -> (stream, True, treeNode t nt)
+                                         _         -> (ts, False, EmptyTree)
+    | otherwise = (ts, False, EmptyTree)
+                            
+  where
+    parseExpr = parse Expr ts
+    (streamExpr, statusExpr, ptExpr) = parseExpr
+    treeNode = NodeReturnStmt
+
+parse StmtList ts
 parse SimpleExpr ts = (ts, True, "", EmptyTree)
 
 parse x [] = ([], True, "", EmptyTree)
