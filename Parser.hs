@@ -11,9 +11,9 @@ type FirstSet = Set.Set Terminal
 type FirstSetMap = Map.Map NonTerminal FirstSet
 
 -- Every parse func will return bool flag showing
--- is parsing ok or not, string will show error output
--- if error occured
-type ParseOutput = ([Terminal], Bool, [String], ParseTree)
+-- is parsing ok or not
+
+type ParseOutput = ([Terminal], Bool, ParseTree)
 
 -- Check if input token is one of nonterminal first set
 inFirstSet :: NonTerminal -> Terminal -> Bool
@@ -23,22 +23,32 @@ inFirstSet nterm term = False
 
 parse :: NonTerminal -> [Terminal] -> ParseOutput
 parse Program ts = 
-    let (stream', status, err, ptDeclList) = parse DeclList ts
-    in case status of
-           True  -> (stream', status, [""], NodeProgramm ptDeclList) 
-           False -> (stream', status, err, NodeProgramm ptDeclList)
+    | statusDeclList = (streamDeclList, True, NodeProgram ptDeclList)
+    | otherwise = (ts, False, NodeProgram EmptyTree)
+  where
+    (streamDeclList, statusDeclLis, ptDeclList) = parse DeclList ts
 
 parse DeclList ts =
-    let (stream', status', err', ptDecl) = parse Decl ts
-        (stream'', status'', err'', ptDeclListN) = parse DeclListN stream'
-    in (stream'', status' && status'', err' ++ err'', NodeDeclList ptDecl ptDeclListN)
+    | statusDecl = case statusNodeDeclList of
+                       True -> (streamNodeDeclList, True, NodeDeclList ptDecl ptNodeDeclList)
+                       _    -> onError
+    | otherwise = onError
+  where
+    (streamDecl, statusDecl, ptDecl) = parse Decl ts
+    (streamNodeDeclList, statusNodeDeclList, ptDeclList) = parse DeclList streamDecl
+    onError = (ts, False, DeclList EmptyTree EmptyTree)
 
 parse DeclListN ts@(t:stream)
     | inFirstSet DeclListN t = 
-        let (stream', status', err', ptDecl) = parse Decl ts
-            (stream'', status'', err'', ptDeclListN) = parse DeclListN stream'
-        in (stream'', status' && status'', err' + err'',  NodeDeclListN ptDecl ptDeclListN)
+        case statusDecl of
+            True -> case statusDeclListN of
+                        True -> (streamDeclListN, True, NodeDeclListN ptDecl ptDeclListN)
+                        _    -> (ts, False, NodeDeclListN EmptyTree EmptyTree)
+            _    -> (ts, False, NodeDeclListN EmptyTree EmptyTree) 
     | otherwise = (ts, True, "", NodeDeclListN EmptyTree EmptyTree)
+  where
+    (streamDecl, statusDecl, ptDecl) = parse Decl ts
+    (streamDeclListN, statusDeclListN, ptDeclListN) = parse DeclListN streamDecl
 
 parse Decl ts = 
     let (stream', status', err', ptVarDecl) = parse VarDecl ts
@@ -293,6 +303,59 @@ parse ReturnStmt ts@(t:nt:stream)
     parseExpr = parse Expr ts
     (streamExpr, statusExpr, ptExpr) = parseExpr
     treeNode = NodeReturnStmt
+
+parse BreakStmt ts@(t:nt:stream)
+    | t == TermBreak = case nt of
+                           TermColon -> (stream, True, NodeBreakStmt t nt)
+                           _         -> (ts, False, EmptyTree)
+    | otherwise = (ts, False, EmptyTree)
+
+parse Expr ts@(t:stream)
+    | statusMutable = case head streamMutable of
+                          TermEqual -> case statusExpr of
+                                           True -> (streamExpr, True, treeNode ptMutable TermEqual ptExpr)
+                                           _    -> (ts, False, EmptyTree)
+                          TermIncrement -> (tail streamMutable, True, treeNode ptMutable TermIncrement TermEmpty)
+                          TermDecrement -> (tail streamMutable, True, treeNode ptMutable TermDecrement TermEmpty)
+                          _             -> (ts, False, EmptyTree)
+    | statusSimpleExpr = (streamSimpleExpr, True, treeNode ptSimpleExpr TermEmpty TermEmpty)
+  where
+    treeNode = NodeExpr
+    (streamMutable, statusMutable, ptMutable) = parse Mutable ts
+    (streamExpr, statusExpr, ptExpr) = parse Expr tail streamMutable
+    (tsSimpleExpr, statusSimpleExpr, ptSimpleExpr) = parse SimpleExpr ts
+
+parse SimpleExpr ts
+    | statusAndExpr = case statusSimpleExpr of
+                          True -> (streamSimpleExpr, True, NodeSimpleExpr ptAndExpr ptSimpleExpr)
+                          _    -> (ts, False, EmptyTree)
+    | otherwise = (ts, False, EmptyTree)
+  where
+    (streamAndExpr, statusAndExpr, ptAndExpr) = parse AndExpr ts
+    (streamSimpleExpr, statusSimpleExpr, ptSimpleExpr) = parse SimpleExpr streamAndExpr
+
+parse SimpleExprN ts@(t:stream)
+    | t == TermOr = case statusAndExpr of
+                        True -> case statusSimpleExpr of
+                                    True -> (streamSimpleExpr, True, 
+                                             NodeSimpleExpr ptAndExpr ptSimpleExpr)
+                                    _    -> (ts, False, EmptyTree)
+                        _    -> (ts, False, EmptyTree) 
+    | otherwise = (ts, True, EmptyTree)
+  where
+    (streamAndExpr, statusAndExpr, ptAndExpr) = parse AndExpr ts
+    (streamSimpleExpr, statusSimpleExpr, ptSimpleExpr) = parse SimpleExpr streamAndExpr
+
+parse AndExpr ts
+    | statusUnaryRelExpr = case statusAndExpr of
+                               True -> (streamAndExpr, True, NodeAndExpr ptUnaryRelExpr ptAndExpr)
+                               _    -> (ts, False, EmptyTree)
+    | otherwise = (ts, False, EmptyTree)
+  where
+    (streamUnaryRelExpr, statusUnaryRelExpr, ptUnaryRelExpr) = parse UnaryRelExpr ts
+    (streamAndExpr, statusAndExpr, ptAndExpr) = parse AndExpr streamUnaryRelExpr
+
+
 
 parse StmtList ts
 parse SimpleExpr ts = (ts, True, "", EmptyTree)
