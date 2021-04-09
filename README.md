@@ -28,7 +28,9 @@ Basic structure is:
         - Create Parse Table from this
         - Write parser(stack, parse table, parser itself)
         - Make right grammar for that(non-determenistic, lack of left recursion)
-    * Build recursion descent parser
+    * Build recursion descent parser:
+        - After some time, realized that it's some way uncomfortable to write
+          such parser in Haskell.
     * AST vs parse tree(concrete)
     * Parse tree could be represented as production, AST not!!!
   - Semantic analyzer(It's all about semantic correctness)

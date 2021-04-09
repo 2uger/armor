@@ -49,7 +49,7 @@ data ParseTree = EmptyTree
                | NodeSumOp Terminal
                | NodeMulOp Terminal
                | NodeFactor ParseTree
-               | NodeMutable Termina
+               | NodeMutable Terminal
                | NodeImmutable
                | NodeCall
                | NodeArgs
@@ -82,7 +82,7 @@ representNode (NodeDecl t) =
     case t of
         NodeVarDecl x y z -> "Decl -> VarDecl\n" 
                              ++ representNode t
-        NodeFuncDecl x y z -> "Decl -> FunclDecl\n"
+        NodeFuncDecl x y z g h e -> "Decl -> FunclDecl\n"
                               ++ representNode t
 
 representNode (NodeVarDecl t t1 l) = 

@@ -4,13 +4,13 @@ module ParserTypes where
 -- Just to make it comfortable to work with them while 
 -- make parsing stage
 data Terminal = TermId
-              | TermInt Int 
-              | TermBool Bool
-              | TermChar Char
+              | TermInt 
+              | TermBool 
+              | TermChar
 
-              | TermNumConst Int
-              | TermCharConst Char
-              | TermStringConst String
+              | TermNumConst
+              | TermCharConst
+              | TermStringConst 
 
               | TermBackQuote -- ; 
               | TermComma     -- ,
