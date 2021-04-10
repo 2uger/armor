@@ -1,10 +1,9 @@
 module Ast where
 
--- C-ish language consists of three main constructions
+-- Block structured language consists of three main constructions
 -- declaration(variable declaration,
 --             func declaration) 
--- statement(statement is process of somehow changing programm
---           state)
+-- statement(statement is a process of somehow change programm state)
 -- expression(something that will have evaluated value
 --            2 + 2 will have value 4
 --            a will have value of a which we init or declare before)
@@ -17,13 +16,14 @@ module Ast where
 --      int m = x * 45;
 --      return m;
 -- };
-data VarDeclaration = { Name :: String
-                      , Type :: Type
-                      , InitValue :: Expression }
+data Declaration = VarDecl VarDeclaration | FuncDecl FuncDeclaration deriving(Show)
+data VarDeclaration = { varName :: String
+                      , varType :: Type
+                      , varInitValue :: Expression }
 
-data FuncDeclaration = { Name :: String
-                       , Type :: Type
-                       , Code :: StatementBlock}
+data FuncDeclaration = { funcName :: String
+                       , funcType :: Type
+                       , funcBody :: StatementBlock}
 
 data Type = TypeBool 
           | TypeInt 
@@ -35,34 +35,40 @@ data Type = TypeBool
 data ParamList = ParamList String Type ParamList
 
 -- ****** Statement ******
-data Statement = VarDecl | Expression | IfElse | ForLoop | Return
+data Statement = StmtLocalVarDecl VarDeclaration 
+               | StmtExpression Expression
+               | StmtIfElse IfElse 
+               | StmtForLoop ForLoop
+               | StmtReturn Return
+                 deriving(Show, Read)
 
-data ExprIfElse = ExprIfElse { Condition :: Expression,
-                               IfCode :: StatementBlock,
-                               ElseCode :: StatementBlock }
+data StmtIfElse = StmtIfElse { evaluateExpr :: Expression
+                             , ifBody :: Statement
+                             , elseBody :: Statement }
 
-data ExprForLoop = ExprForLoop { InitExpr :: Expression,
-                                 Condition :: Expression,
-                                 NextIter :: Expression,
-                                 Body :: StatementBlock }
+data ForLoop = ForLoop { foLoopInitExpr :: Expression
+                       , forLoopevaluateExpr :: Expression
+                       , nextExpr :: Expression
+                       , body :: Expression }
+
+data Return = Return Expression
 
 -- Statement block will contain multiple statements
-data StatementBlock a = EmptyStmt | Stmt a StatementBlock a
 
 
 -- ****** Expression ******
 data Expression = ExprEmpty
-                | ExprName String 
+                -- Use variable that was declared earlier
+                | ExprNameReference String 
+                -- Hardcode constant(NumConst or StringCons)
                 | ExprValue Value 
-                | ExprAdd { Left :: Expression,
-                            Right :: Expression }
-                | ExprSub { Left :: Expression,
-                            Right :: Expression }
-                | ExprMul { Left :: Expression,
-                            Right :: Expression }
-                | ExprDiv { Left :: Expression,
-                            Right :: Expression }
-                | ExprAnd { Left :: Expression,
-                            Right :: Expression }
-                | ExprOr  { Left :: Expression,
-                            Right :: Expression }
+
+                | ExprAdd Expression Expression
+                | ExprSub Expression Expression
+                | ExprMul Expression Expression
+                | ExprDiv Expression Expression
+                | ExprAnd Expression Expression
+                | ExprOr  Expression Expression
+            
+                | ExprFuncCall Expression Expression
+                | ExprFuncArgs Expression Expression
