@@ -20,8 +20,8 @@ data Terminal = TermId
               | TermRParen      -- )
               | TermLSqBracket  -- [
               | TermRSqBracket  -- ]
-              | TermLBrace      -- }
-              | TermRBrace      -- {
+              | TermLBrace      -- {
+              | TermRBrace      -- }
 
               -- Keywords
               | TermStatic
@@ -58,8 +58,8 @@ data NonTerminal = Program
                  | Parms
                  | ParmList
                  | ParmListN
-                 | ParmTypeList
-                 | ParmID
+                 | ParmType
+                 | ParmId
 
                  | Stmt
                  | ExprStmt

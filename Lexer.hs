@@ -67,7 +67,7 @@ tokenByState state
     | state == 16  = TermInt
     | state == 23  = TermBool
     | state == 26  = TermNumConst
-    | state == 34  = TermId
+    | state == 25  = TermId
     | state == 99 = TermEmpty
    -- | state == 3  = TokenMul
    -- | state == 4  = TokenEqual
@@ -128,9 +128,9 @@ nextState 0 c
    -- -- Start state for TermCharConst
    -- | c == '\'' = (23, True)
 
-   -- -- Start state for TermId
-   -- | c `elem` ['a'..'z'] = (24, True)
-   -- | otherwise = (99, True)
+   -- Start state for TermId
+    | c `elem` ['a'..'z'] = (24, True, False)
+    | otherwise = error "I dont know what is it"
 
 nextState 14 c
     | c == 'n' = (15, True, False)
@@ -167,7 +167,7 @@ nextState 20 c
 -- For NumConst
 nextState 26 c
     | c `elem` ['0'..'9'] = (26, True, False)
-    | c `elem` [']', ';'] = (26, False, True)
+    | c `elem` [']', ';', ')'] = (26, False, True)
     | c == ' ' = (26, True, True)
     | otherwise = error "Unexpected symbol after numbers"
 
@@ -175,6 +175,12 @@ nextState 34 c
     | c `elem` ['a' .. 'z'] = (34, True, False)
     | c `elem` ['0' .. '9'] = (34, True, False)
     | otherwise = (34, True, True)
+-- For id name
+nextState 24 c
+    | c `elem` ['a'..'z'] = (24, True, False)
+    | c `elem` ['1'..'9'] = (24, True, True)
+    | c == ' ' = (25, True, True)
+    | otherwise = error "Unexpected symbol while pars Id"
 --nextState 9 c
 --        | c == 'n' = (10, True)
 --        | c `elem` ['a'..'z'] || c `elem` ['1'..'9'] = (13, True)

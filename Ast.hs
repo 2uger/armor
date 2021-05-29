@@ -1,4 +1,4 @@
-module Ast where
+module AbstractSyntaxTree where
 
 -- Block structured language consists of three main constructions
 -- declaration(variable declaration,
@@ -16,14 +16,18 @@ module Ast where
 --      int m = x * 45;
 --      return m;
 -- };
-data Declaration = VarDecl VarDeclaration | FuncDecl FuncDeclaration deriving(Show)
-data VarDeclaration = { varName :: String
-                      , varType :: Type
-                      , varInitValue :: Expression }
+data Ast = NodeStmt Statement Ast
+         | NodeDeclaration Declaration Ast
+         | NodeExpression Expression Ast
+         | NodeEmpty
 
-data FuncDeclaration = { funcName :: String
-                       , funcType :: Type
-                       , funcBody :: StatementBlock}
+data Declaration = VarDeclaration { varName :: String
+                                  , varType :: Type
+                                  , varInitValue :: Expression }
+                 | FuncDeclaration { funcName :: String
+                                   , funcType :: Type
+                                   , funcBody :: StatementBlock} 
+                 deriving(Show, Read)
 
 data Type = TypeBool 
           | TypeInt 
@@ -72,3 +76,44 @@ data Expression = ExprEmpty
             
                 | ExprFuncCall Expression Expression
                 | ExprFuncArgs Expression Expression
+
+
+-- ****** Functions to work with AST  ******
+--
+createAst NodeVarDecl typeSpec declInit _ =
+    VarDeclaration varName varType varValue 
+  where 
+    varType = case typeSpec of
+                  TermInt  -> TypeInt
+                  TermBool -> TypeBool
+                  TermChar -> TypeChar
+    (varName, varValue) = createAst NodeVarDeclInit declInit
+
+createAst NodeVarDeclInit (varId varName) _ expr =
+    | expr == EmptyTree = (varName, ExprValue 0)
+
+createAst NodeSimpleExpr andExpr simple
+                    
+
+
+
+
+createAstNode :: ParseTree -> ParseTree -> Ast
+createAstNode NodeVarDecl typeSpec declList = 
+
+varDeclAstNode typeSpec NodeVarDeclList declInit declList =
+    | declList == EmptyTree = ()
+    | otherwise = createAstNode declList
+  where
+    declAst = NodeDeclaration 
+
+createAstNode NodeDeclListN comma declInit declListN = 
+    | declListN == EmptyTree = createAstNode NodeDeclListN declListN
+    | otherwise = 
+
+createAstNode typeSpec NodeDeclInit id colon expr = 
+    | expr == EmptyTree = 
+  where
+    declAst = NodeDeclaration VarDeclaration id typeSpec
+
+exprAstNode SimpleExpr
