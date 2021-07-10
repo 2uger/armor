@@ -5,7 +5,6 @@ decl      :: varDecl | funcDecl
 
 ***
 varDecl       :: typeSpec varDeclInit ';'
-scopedVarDecl :: 'static' typeSpec varDeclList ';' | typeSpec varDeclList ';' 
 typeSpec      :: 'INT' | 'BOOL' | 'CHAR'
 varDeclInit   :: varDeclId | varDeclId ':' simpleExpr
 varDeclId     :: 'ID' | 'ID' '[' 'NUMCONST' ']'
@@ -18,21 +17,15 @@ parmType     :: typeSpec parmId
 parmId       :: 'ID'
 
 ***
-stmt         :: exprStmt | compoundStmt | iterStmt | returnStmt | breakStmt 
+stmt         :: exprStmt | compoundStmt
 exprStmt     :: expr ';' | ';'
-compoundStmt :: '{' localDecls stmtList '}'
+compoundStmt :: '{' stmtList '}'
 
 stmtList     :: stmt stmtListN
 stmtListN    :: stmt | 'E'
-localDecl   :: scopedVarDecl localDeclN | 'E'
-localDeclN  :: scopedVarDecl localDeclN | 'E'
-
-iterStmt     :: 'while' '(' simpleExpr ')' stmt
-returnStmt   :: 'return' ';' | 'return' exp ';'
-breakStmt    :: 'break' ';'
 
 ***
-expr         :: mutable '=' expr | mutable '=' expr | mutable '++' | mutable '--' | simpleExpr
+expr         :: mutable '=' expr | mutable '++' | mutable '--' | simpleExpr
 simpleExpr   :: andExpr simpleExprN
 simpleExprN  :: OR andExpr simplExprN | 'E'
 andExpr      :: unaryRelExpr andExprN
@@ -52,6 +45,5 @@ factor      :: mutable | immutable
 mutable     :: 'ID' | 'ID' '[' expr ']'
 immutable   :: '(' expr ')' | call | constant
 call        :: 'ID' '(' args ')'
-args        :: argsList | 'E'
-argsList    :: argsList ',' expr | expr
+args        :: expr | 'E'
 constant    :: 'NUMCONSTANT' | 'CHARCONSTANT' | 'STRINGCONSTANT'
