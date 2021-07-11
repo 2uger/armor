@@ -9,94 +9,81 @@ import qualified Data.Set as Set
 type FirstSet = Set.Set Terminal
 type FirstSetMap = Map.Map NonTerminal FirstSet
 
+nonTermError :: NonTerminal -> String
+nonTermError nterm = "Catching error while trying parse non terminal rule: " ++ show nterm
+
+termError :: [Terminal] -> Terminal -> String
+
+termError expect actual = "\nCatching error while trying parse terminal\nExpected: " ++ show expect ++ "\nActual: " ++ show actual
+
+termError expect _ = "\nTrying to parse terminal " ++ show expect ++ "\nBut there is empty one\n"
+
 -- Return terminals and node for parse tree
 -- throwing an error when catch false terminal
 
-parse Program terms =
-    let (terms', nodeDeclList) = parse DeclList terms
-    in (terms', NodeProgram nodeDeclList)
-
-parse DeclList terms =
-    let (terms', nodeDecl) = parse Decl terms
-    in (terms', NodeDeclList nodeDecl)
-
-parse Decl terms =
-    let (terms', nodeVarDecl) = parse FuncDecl terms
-    in (terms', NodeDecl nodeVarDecl)
-
-parse VarDecl terms = 
-    let (terms', nodeTypeSpec) = parse TypeSpec terms
-        ((term:xs), nodeVarDeclList) = parse VarDeclList terms'
-    in case term of
-           TermBackQuote -> (xs, NodeVarDecl nodeTypeSpec nodeVarDeclList TermBackQuote)
-           otherwise -> error $ "Error parsing TermBackQuote" ++ show terms'
-           
-parse TypeSpec (term:xs)
-    | term == TermInt = (xs, NodeTypeSpec TermInt)
-    | term == TermBool = (xs, NodeTypeSpec TermBool)
-    | term == TermChar = (xs, NodeTypeSpec TermChar)
-    | otherwise = error "Error parsing type spec"
-
-parse VarDeclList terms = 
-    let (terms', nodeVarDeclInit) = parse VarDeclInit terms
-    in (terms', NodeVarDeclList nodeVarDeclInit)
-
-parse VarDeclInit terms = 
-    let (terms', nodeVarDeclId) = parse VarDeclId terms
-        (terms'', nodeVarDeclInit) = parse SimpleExpr $ parseColon terms'
-    in (terms'', NodeVarDeclInit nodeVarDeclId TermColon nodeVarDeclInit)
+parseProgram :: [Terminal] -> Maybe ([Terminal], ParseTree)
+parseProgram terms =
+    case res of
+        Just (nterms, nnodes) -> Just (nterms, NodeProgram (nnodes !! 0))
+        _                     -> error $ nonTermError Program
   where
-    parseColon (term:xs)
-        | term == TermColon = xs
-        | otherwise = error "Error parsing Colon"
+    res = Just (terms, []) >>= parse DeclList
 
-parse VarDeclId terms =
-    let
-        res = parseTerm terms >>= parseTerm >>= parseTerm >>= parseTerm
-    in case res of
-           Just terms' -> (terms', NodeVarDeclId TermId TermLSqBracket TermNumConst TermRSqBracket) 
-           Nothing -> error "Failed to match strings"
-  where 
-    parseTerm :: [Terminal] -> Maybe [Terminal]
-    parseTerm (TermId:xs) = Just xs
-    parseTerm (TermLSqBracket:xs) = Just xs
-    parseTerm (TermNumConst:xs) = Just xs
-    parseTerm (TermRSqBracket:xs) = Just xs
-    parseTerm _ = Nothing
+parse :: NonTerminal -> ([Terminal], [ParseTree]) -> Maybe ([Terminal], [ParseTree])
 
-parse SimpleExpr terms =
-    (terms, NodeSimpleExpr EmptyTree EmptyTree)
-
-
--- TODO: parseTerm match TermRParen all time
---       think about make this thing much cooler
-parse FuncDecl terms =
-    (terms''''', NodeFuncDecl nodeTypeSpec TermId TermLSqBracket nodeParms TermRSqBracket nodeStmt)
+parse DeclList (terms, nodes) =
+    case res of
+        Just (nterms, nnodes) -> Just (nterms, [NodeDeclList (nnodes !! 0)] ++ nodes)
+        _                     -> error $ nonTermError DeclList
   where
-    (terms', nodeTypeSpec) = parse TypeSpec terms
-    terms'' = case parseTerm terms' >>= parseTerm of
-                  Just terms -> terms
-                  Nothing -> error "Error while parsing id and lparen"
-    (terms''', nodeParms) = parse Parms terms''
-    terms'''' = case parseTerm terms''' of
-                 Just terms -> terms
-                 Nothing -> error "Errro while parsing rparen"
-    (terms''''', nodeStmt) = parse Stmt terms''''
+    res = Just (terms, []) >>= parse Decl
 
-    parseTerm (TermId:xs) = Just xs
-    parseTerm (TermLParen:xs) = Just xs
-    parseTerm (TermRParen:xs) = Just xs
-    parseTerm _ = Nothing
+parse Decl (terms, nodes) =
+    case res of
+        Just (nterms, nnodes) -> Just (nterms, [NodeDecl (nnodes !! 0)] ++ nodes)
+        _                     -> error $ nonTermError DeclList
+  where
+    res = Just (terms, []) >>= parse VarDecl
 
-parse Parms terms = let (terms', nodeParmType) = parse ParmType terms
-                    in (terms', NodeParms nodeParmType)
 
-parse ParmType terms = let (terms', nodeTypeSpec) = parse TypeSpec terms
-                           (terms'', nodeParmId) = parse ParmId terms'
-                       in (terms'', NodeParmType nodeTypeSpec nodeParmId)
+parse VarDecl (terms, nodes) =
+    case res of
+        Just (nterms, nnodes) -> Just (nterms, [NodeVarDecl (nnodes !! 0) (nnodes !! 1) (nnodes !! 2)] ++ nodes)
+        _                     -> error $ nonTermError VarDecl
+  where
+    res = Just (terms, []) >>= parse TypeSpec >>= parse VarDeclInit >>= parseTerm TermBackQuote
 
-parse ParmId (term:xs)
-    | term == TermId = (xs, NodeParmId TermId)
-    | otherwise = error "Error while parsing ID"
+parse TypeSpec ((term:xs), nodes)
+    | term `elem` [TermInt, TermBool, TermChar] = Just (xs, [Leaf term] ++ nodes)
+    | otherwise = error $ termError [TermInt, TermBool, TermChar] term
 
-parse Stmt terms = (terms, NodeStmt EmptyTree)
+parse VarDeclInit (terms, nodes) =
+    case res of
+        Just (nterms, nnodes) -> Just (nterms, [NodeVarDeclInit (nnodes !! 0) (nnodes !! 1) (nnodes !! 2)] ++ nodes)
+        _                     -> error $ nonTermError VarDeclInit
+  where
+    res = Just (terms, []) >>= parse VarDeclId >>= parseTerm TermColon >>= parse SimpleExpr
+
+parse VarDeclId (terms, nodes) =
+    case res of
+        Just (nterms, nnodes) -> Just (nterms, [NodeVarDeclId (nnodes !! 0) (nnodes !! 1) (nnodes !! 2) (nnodes !! 3)] ++ nodes)
+        _                     -> error $ nonTermError DeclList
+  where
+    res = Just (terms, []) >>= parseTerm TermId >>= parseTerm TermLSqBracket >>= parseTerm TermNumConst >>= parseTerm TermRSqBracket
+
+parse SimpleExpr (terms, nodes) = Just (terms, [NodeSimpleExpr EmptyTree EmptyTree] ++ nodes)
+
+--createParseTreeNode :: ParseTree -> [ParseTree] -> ParseTree
+--createParseTreeNode pt nodes
+--    | length nodes == 1 = pt (nodes !! 0)
+--    | length nodes == 2 = pt (nodes !! 0) (nodes !! 1)
+--    | length nodes == 3 = pt (nodes !! 0) (nodes !! 1) (nodes !! 2)
+--    | length nodes == 4 = pt (nodes !! 0) (nodes !! 1) (nodes !! 2) (nodes !! 3)
+--    | length nodes == 5 = pt (nodes !! 0) (nodes !! 1) (nodes !! 2) (nodes !! 3) (nodes !! 4)
+
+parseTerm :: Terminal -> ([Terminal], [ParseTree]) -> Maybe ([Terminal], [ParseTree])
+parseTerm expect ((term:xs), nodes)
+    | expect == term = Just (xs, [Leaf term] ++ nodes) 
+    | otherwise = error $ termError [expect] term
+
+parseTerm expect ([], nodes) = error $ termError [expect] TermEmpty 

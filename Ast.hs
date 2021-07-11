@@ -79,20 +79,25 @@ data Expression = ExprEmpty
 
 
 -- ****** Functions to work with AST  ******
---
+-- Parse VarDecl to Ast
+createAst :: ParseTree -> Ast
 createAst NodeVarDecl typeSpec declInit _ =
     VarDeclaration varName varType varValue 
-  where 
-    varType = case typeSpec of
-                  TermInt  -> TypeInt
-                  TermBool -> TypeBool
-                  TermChar -> TypeChar
     (varName, varValue) = createAst NodeVarDeclInit declInit
 
 createAst NodeVarDeclInit (varId varName) _ expr =
     | expr == EmptyTree = (varName, ExprValue 0)
 
 createAst NodeSimpleExpr andExpr simple
+
+createAst NodeVarDeclInit TermId varName TermColon NodeSimpleExpr =
+    (varName, createAst SimpleExpr)
+createAst NodeTypeSpec varType
+    | varType == TermInt = TypeInt
+    | varType == TermBool = TypeBool
+    | varType == TermChar = TypeChar
+
+---->> NodeDeclaration VarDeclaration "name" TypeInt 2
                     
 
 

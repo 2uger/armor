@@ -10,8 +10,11 @@ import Parser
 
 testVarTerms = [TermInt, TermId, TermLSqBracket, TermNumConst, TermRSqBracket, TermColon, TermBackQuote]
 
-testFuncTerms = [TermInt, TermId, TermRSqBracket, TermInt, TermId, TermRParen]
+testFuncTerms = [TermInt, TermId, TermLParen, TermInt, TermId, TermRParen, TermLBrace, TermRBrace]
 
-mainFunc :: String 
-mainFunc = show $ parse Program testFuncTerms
+testIterStmt = [TermWhile, TermLParen, TermRParen]
+
+testReturnStmt = [TermReturn, TermBackQuote]
+testBreakStmt = [TermBreak, TermBackQuote]
+
 

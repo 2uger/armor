@@ -11,6 +11,7 @@ data Terminal = TermId
               | TermNumConst
               | TermCharConst
               | TermStringConst 
+              | TermBoolConst
 
               | TermBackQuote -- ; 
               | TermComma     -- ,

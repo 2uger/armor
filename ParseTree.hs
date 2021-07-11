@@ -5,16 +5,15 @@ import ParserTypes
 -- Some production could produce 'E'(empty string)
 -- EmptyTree will represent that sign
 data ParseTree = EmptyTree 
+               | Leaf Terminal
                | NodeProgram ParseTree 
                | NodeDeclList ParseTree
-               | NodeDecl ParseTree
+               | NodeDecl ParseTree 
 
-               | NodeVarDecl ParseTree ParseTree Terminal
-               | NodeScopedVarDecl Terminal ParseTree ParseTree Terminal
-               | NodeTypeSpec Terminal
-               | NodeVarDeclList ParseTree
-               | NodeVarDeclInit ParseTree Terminal ParseTree
-               | NodeVarDeclId Terminal Terminal Terminal Terminal
+               | NodeVarDecl ParseTree ParseTree ParseTree
+               | NodeTypeSpec ParseTree
+               | NodeVarDeclInit ParseTree ParseTree ParseTree
+               | NodeVarDeclId ParseTree ParseTree ParseTree ParseTree
 
                | NodeFuncDecl ParseTree Terminal Terminal ParseTree Terminal ParseTree
                | NodeParms ParseTree
@@ -24,7 +23,7 @@ data ParseTree = EmptyTree
 
                | NodeStmt ParseTree
                | NodeExprStmt ParseTree Terminal
-               | NodeCompoundStmt Terminal ParseTree ParseTree Terminal
+               | NodeCompoundStmt Terminal ParseTree Terminal
                | NodeStmtList ParseTree ParseTree
                | NodeStmtListN ParseTree
                | NodeLocalDecl ParseTree ParseTree
@@ -48,11 +47,10 @@ data ParseTree = EmptyTree
                | NodeMulOp Terminal
                | NodeFactor ParseTree
                | NodeMutable Terminal
-               | NodeImmutable
-               | NodeCall
-               | NodeArgs
-               | NodeArgsList
-               | NodeConstant
+               | NodeImmutable Terminal ParseTree Terminal
+               | NodeCall Terminal Terminal ParseTree Terminal
+               | NodeArgs ParseTree
+               | NodeConstant Terminal
                deriving (Show, Read)
 
 -- It's a nice util called graphviz(gnu package)
