@@ -78,47 +78,34 @@ data Expression = ExprEmpty
                 | ExprFuncArgs Expression Expression
 
 
--- ****** Functions to work with AST  ******
--- Parse VarDecl to Ast
+-- ****** Create AST from ParseTree  ******
+
+parseParseTree :: ParseTree -> Ast
+parseParseTree (pt n)
+    | n == NodeVarDecl = createAst n
+    | otherwise = parseParseTree n
+
+-- Will create AST recursively parse all demanding parts
 createAst :: ParseTree -> Ast
-createAst NodeVarDecl typeSpec declInit _ =
-    VarDeclaration varName varType varValue 
-    (varName, varValue) = createAst NodeVarDeclInit declInit
 
-createAst NodeVarDeclInit (varId varName) _ expr =
-    | expr == EmptyTree = (varName, ExprValue 0)
-
-createAst NodeSimpleExpr andExpr simple
-
-createAst NodeVarDeclInit TermId varName TermColon NodeSimpleExpr =
-    (varName, createAst SimpleExpr)
-createAst NodeTypeSpec varType
-    | varType == TermInt = TypeInt
-    | varType == TermBool = TypeBool
-    | varType == TermChar = TypeChar
-
----->> NodeDeclaration VarDeclaration "name" TypeInt 2
-                    
-
-
-
-
-createAstNode :: ParseTree -> ParseTree -> Ast
-createAstNode NodeVarDecl typeSpec declList = 
-
-varDeclAstNode typeSpec NodeVarDeclList declInit declList =
-    | declList == EmptyTree = ()
-    | otherwise = createAstNode declList
+createAstVarDeclaration (NodeVarDecl varType declInit _) = VarDecl $ createAst  
   where
-    declAst = NodeDeclaration 
+    declType = parseDeclarationType varType
+    
+parseVarDeclInit (_ id _ expr) = (id, parseExpression expr)
 
-createAstNode NodeDeclListN comma declInit declListN = 
-    | declListN == EmptyTree = createAstNode NodeDeclListN declListN
-    | otherwise = 
+parseExpression (SimpleExpression l r) =  ExprAnd $ parseExpression r
 
-createAstNode typeSpec NodeDeclInit id colon expr = 
-    | expr == EmptyTree = 
-  where
-    declAst = NodeDeclaration VarDeclaration id typeSpec
+parseExpression (NodeSimpleExpression l m r)
+    -- check thath node is not empty
+    | l == TermOr = ExprOr parseExpression
 
-exprAstNode SimpleExpr
+parseExpression (NodeAndExpr l r) = ExprAnd $ parseExpression l $ parseExpression r
+
+parseDeclarationType :: ParseTree -> Type
+parseDeclarationType (_ typeSpec)
+    | typeSpec == TermInt = TypeInt
+    | typeSpec == TermBool = TypeBool
+    | typeSpec == TermChar = TypeChar
+    | otherwise = error "Wrong type!!!\n"
+
