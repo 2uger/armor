@@ -40,7 +40,6 @@ sumExprN :: sumOp mulExpr sumExprN | 'E'
 mulExpr :: factor | mulExprN
 mulExprN :: mulOp factor mulExprN | 'E'
 
-mulExpr :: mulExpr mulOp factor | factor
 sumOp   :: '+' | '-'
 mulOp   :: '*' | '/' | '%'
 

@@ -42,7 +42,9 @@ data ParseTree = EmptyTree
                | NodeRelExpr ParseTree
                | NodeSumExpr ParseTree ParseTree
                | NodeSumExprN ParseTree ParseTree ParseTree
-               | NodeMulExpr ParseTree ParseTree ParseTree
+               | NodeMulExpr ParseTree ParseTree
+               | NodeMulExprN ParseTree ParseTree ParseTree
+                
                | NodeSumOp Terminal
                | NodeMulOp Terminal
                | NodeFactor ParseTree
@@ -51,7 +53,7 @@ data ParseTree = EmptyTree
                | NodeCall Terminal Terminal ParseTree Terminal
                | NodeArgs ParseTree
                | NodeConstant Terminal
-               deriving (Show, Read)
+               deriving (Show, Read, Eq)
 
 -- It's a nice util called graphviz(gnu package)
 -- Using simple language DOT it will help to represent

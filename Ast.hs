@@ -1,5 +1,7 @@
 module AbstractSyntaxTree where
 
+import ParseTree
+
 -- Block structured language consists of three main constructions
 -- declaration(variable declaration,
 --             func declaration) 
@@ -16,46 +18,46 @@ module AbstractSyntaxTree where
 --      int m = x * 45;
 --      return m;
 -- };
-data Ast = NodeStmt Statement Ast
-         | NodeDeclaration Declaration Ast
-         | NodeExpression Expression Ast
-         | NodeEmpty
-
-data Declaration = VarDeclaration { varName :: String
-                                  , varType :: Type
-                                  , varInitValue :: Expression }
-                 | FuncDeclaration { funcName :: String
-                                   , funcType :: Type
-                                   , funcBody :: StatementBlock} 
-                 deriving(Show, Read)
-
-data Type = TypeBool 
-          | TypeInt 
-          | TypeChar 
-          | TypeVoid
-          | TypeArray
-          | TypeFunction Type ParamList
-
-data ParamList = ParamList String Type ParamList
-
--- ****** Statement ******
-data Statement = StmtLocalVarDecl VarDeclaration 
-               | StmtExpression Expression
-               | StmtIfElse IfElse 
-               | StmtForLoop ForLoop
-               | StmtReturn Return
-                 deriving(Show, Read)
-
-data StmtIfElse = StmtIfElse { evaluateExpr :: Expression
-                             , ifBody :: Statement
-                             , elseBody :: Statement }
-
-data ForLoop = ForLoop { foLoopInitExpr :: Expression
-                       , forLoopevaluateExpr :: Expression
-                       , nextExpr :: Expression
-                       , body :: Expression }
-
-data Return = Return Expression
+--data Ast = NodeStmt Statement Ast
+--         | NodeDeclaration Declaration Ast
+--         | NodeExpression Expression Ast
+--         | NodeEmpty
+--
+--data Declaration = VarDeclaration { varName :: String
+--                                  , varType :: Type
+--                                  , varInitValue :: Expression }
+--                 | FuncDeclaration { funcName :: String
+--                                   , funcType :: Type
+--                                   , funcBody :: StatementBlock} 
+--                 deriving(Show, Read)
+--
+--data Type = TypeBool 
+--          | TypeInt 
+--          | TypeChar 
+--          | TypeVoid
+--          | TypeArray
+--          | TypeFunction Type ParamList
+--
+--data ParamList = ParamList String Type ParamList
+--
+---- ****** Statement ******
+--data Statement = StmtLocalVarDecl VarDeclaration 
+--               | StmtExpression Expression
+--               | StmtIfElse IfElse 
+--               | StmtForLoop ForLoop
+--               | StmtReturn Return
+--                 deriving(Show, Read)
+--
+--data IfElse = IfElse { evaluateExpr :: Expression
+--                             , ifBody :: Statement
+--                             , elseBody :: Statement }
+--
+--data ForLoop = ForLoop { foLoopInitExpr :: Expression
+--                       , forLoopevaluateExpr :: Expression
+--                       , nextExpr :: Expression
+--                       , body :: Expression }
+--
+--data Return = Return Expression
 
 -- Statement block will contain multiple statements
 
@@ -65,7 +67,7 @@ data Expression = ExprEmpty
                 -- Use variable that was declared earlier
                 | ExprNameReference String 
                 -- Hardcode constant(NumConst or StringCons)
-                | ExprValue Value 
+                | ExprValue Int 
 
                 | ExprAdd Expression Expression
                 | ExprSub Expression Expression
@@ -73,53 +75,61 @@ data Expression = ExprEmpty
                 | ExprDiv Expression Expression
                 | ExprAnd Expression Expression
                 | ExprOr  Expression Expression
+                | ExprNot Expression
             
                 | ExprFuncCall Expression Expression
                 | ExprFuncArgs Expression Expression
+                deriving (Show, Read, Eq)
 
 
 -- ****** Create AST from ParseTree  ******
 
-parseParseTree :: ParseTree -> Ast
-parseParseTree (pt n)
-    | n == NodeVarDecl = createAst n
-    | otherwise = parseParseTree n
+--parseParseTree :: ParseTree -> Ast
+--parseParseTree (pt n)
+--    | n == NodeVarDecl = createAst n
+--    | otherwise = parseParseTree n
+--
+---- Will create AST recursively parse all demanding parts
+--createAst :: ParseTree -> Ast
+--
+--createAstVarDeclaration (NodeVarDecl varType declInit _) = VarDecl $ createAst  
+--  where
+--    declType = parseDeclarationType varType
+--    
+--parseVarDeclInit (_ id _ expr) = (id, parseExpression expr)
+--
+--parseExpression (NodeSimpleExpression l r) =  ExprAnd $ parseExpression r
+--
+--parseExpression (NodeSimpleExpressionN l m r)
+--    -- check thath node is not empty
+--    | l == TermOr = ExprOr parseExpression
+--
+--
+--
+--
+parseExpression (NodeAndExpr l r) = ExprAnd (parseExpression l) $ parseExpression r
 
--- Will create AST recursively parse all demanding parts
-createAst :: ParseTree -> Ast
+parseExpression (NodeAndExprN (l term) m r)
+    | r /= EmptyTree = ExprAnd (parseExpression m) $ parseExpression r
+    | otherwise = parseExpression m 
 
-createAstVarDeclaration (NodeVarDecl varType declInit _) = VarDecl $ createAst  
-  where
-    declType = parseDeclarationType varType
-    
-parseVarDeclInit (_ id _ expr) = (id, parseExpression expr)
-
-parseExpression (NodeSimpleExpression l r) =  ExprAnd $ parseExpression r
-
-parseExpression (NodeSimpleExpressionN l m r)
-    -- check thath node is not empty
-    | l == TermOr = ExprOr parseExpression
-
-
-
-
-parseExpression (NodeAndExpr l r) = ExprAnd $ parseExpression l $ parseExpression r
-
-parseExpression (NodeAndExprN l m r) = 
-
-parseExpression (NodeUnaryRelExpr l r) =
-
-parseExpression (NodeRelExpr l) = 
+parseExpression (NodeUnaryRelExpr (l term) r)
+    | l == TermNot = ExprNot parseExpression r
+    | otherwise = parseExpression r
 
 parseExpression (NodeRelExpr l) = parseExpression l
 
-parseExpression (NodeSumExpr l r) = 
+parseExpression (NodeSumExpr l r) = ExprAdd (ExprValue 1) $ parseExpression r 
 
-parseExpression (NodeSumExprN l m r) = parseExpression  
+parseExpression (NodeSumExprN l m r)
+    | r /= EmptyTree = ExprAdd (ExprValue 2) (parseExpression r)
+    | otherwise = ExprValue 9
 
-parseExpression (NodeMulExpr l m r)
-    -- got only value or name in mul expr(x, name, 2, 23 ...)
-    | l == NodeFactor = ExprValue l
+parseExpression (NodeMulExpr l r) = ExprMul (ExprValue 1) $ parseExpression r
+
+parseExpression (NodeMulExprN l m r)
+    | r /= EmptyTree = ExprMul (ExprValue 2) (parseExpression r)
+    | otherwise = ExprValue 3 
 
 
 
@@ -127,10 +137,10 @@ parseExpression (NodeMulExpr l m r)
 
 
 
-parseDeclarationType :: ParseTree -> Type
-parseDeclarationType (_ typeSpec)
-    | typeSpec == TermInt = TypeInt
-    | typeSpec == TermBool = TypeBool
-    | typeSpec == TermChar = TypeChar
-    | otherwise = error "Wrong type!!!\n"
+--parseDeclarationType :: ParseTree -> Type
+--parseDeclarationType (_ typeSpec)
+--    | typeSpec == TermInt = TypeInt
+--    | typeSpec == TermBool = TypeBool
+--    | typeSpec == TermChar = TypeChar
+--    | otherwise = error "Wrong type!!!\n"
 
