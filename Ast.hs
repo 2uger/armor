@@ -94,13 +94,38 @@ createAstVarDeclaration (NodeVarDecl varType declInit _) = VarDecl $ createAst
     
 parseVarDeclInit (_ id _ expr) = (id, parseExpression expr)
 
-parseExpression (SimpleExpression l r) =  ExprAnd $ parseExpression r
+parseExpression (NodeSimpleExpression l r) =  ExprAnd $ parseExpression r
 
-parseExpression (NodeSimpleExpression l m r)
+parseExpression (NodeSimpleExpressionN l m r)
     -- check thath node is not empty
     | l == TermOr = ExprOr parseExpression
 
+
+
+
 parseExpression (NodeAndExpr l r) = ExprAnd $ parseExpression l $ parseExpression r
+
+parseExpression (NodeAndExprN l m r) = 
+
+parseExpression (NodeUnaryRelExpr l r) =
+
+parseExpression (NodeRelExpr l) = 
+
+parseExpression (NodeRelExpr l) = parseExpression l
+
+parseExpression (NodeSumExpr l r) = 
+
+parseExpression (NodeSumExprN l m r) = parseExpression  
+
+parseExpression (NodeMulExpr l m r)
+    -- got only value or name in mul expr(x, name, 2, 23 ...)
+    | l == NodeFactor = ExprValue l
+
+
+
+
+
+
 
 parseDeclarationType :: ParseTree -> Type
 parseDeclarationType (_ typeSpec)
