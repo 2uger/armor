@@ -40,8 +40,8 @@ sumExprN :: sumOp mulExpr sumExprN | 'E'
 mulExpr :: factor mulExprN
 mulExprN :: mulOp factor mulExprN | 'E'
 
-sumOp   :: '+' | '-'
-mulOp   :: '*' | '/' | '%'
+sumOp   :: '+'
+mulOp   :: '*' 
 
 factor      :: mutable | immutable 
 mutable     :: 'ID' | 'ID' '[' expr ']'
