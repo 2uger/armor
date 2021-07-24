@@ -37,7 +37,7 @@ relExpr :: sumExpr
 sumExpr :: mulExpr sumExprN
 sumExprN :: sumOp mulExpr sumExprN | 'E'
 
-mulExpr :: factor | mulExprN
+mulExpr :: factor mulExprN
 mulExprN :: mulOp factor mulExprN | 'E'
 
 sumOp   :: '+' | '-'
