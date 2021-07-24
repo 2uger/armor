@@ -1,6 +1,7 @@
-module AbstractSyntaxTree where
+module Ast where
 
 import ParseTree
+import ParserTypes
 
 -- Block structured language consists of three main constructions
 -- declaration(variable declaration,
@@ -67,8 +68,14 @@ data Expression = ExprEmpty
                 -- Use variable that was declared earlier
                 | ExprNameReference String 
                 -- Hardcode constant(NumConst or StringCons)
-                | ExprValue Int 
+                | ExprValueInt Int 
+                | ExprValueChar Char
+                | ExprValueString String
+                | ExprValueBool Bool
+                -- Array. Left - name. Right - index.
+                | ExprSubscript Expression Expression
 
+                | ExprAssign Expression Expression
                 | ExprAdd Expression Expression
                 | ExprSub Expression Expression
                 | ExprMul Expression Expression
@@ -78,6 +85,7 @@ data Expression = ExprEmpty
                 | ExprNot Expression
             
                 | ExprFuncCall Expression Expression
+                | ExprArg Expression Expression
                 | ExprFuncArgs Expression Expression
                 deriving (Show, Read, Eq)
 
@@ -107,30 +115,59 @@ data Expression = ExprEmpty
 --
 --
 --
-parseExpression (NodeAndExpr l r) = ExprAnd (parseExpression l) $ parseExpression r
 
-parseExpression (NodeAndExprN (l term) m r)
-    | r /= EmptyTree = ExprAnd (parseExpression m) $ parseExpression r
-    | otherwise = parseExpression m 
+--parseExpression (NodeSimpleExpression l r) = ExprOr (parseExpression l) $ parseExpression r
+--
+--parseExpression (NodeSimpleExpressionN l m r)
+--    | r /= EmptyTree = ExprOr (parseExpression m) $ parseExpression r
+--    | otherwise = parseExpression m
+--
+--parseExpression (NodeAndExpr l r) = ExprAnd (parseExpression l) $ parseExpression r
+--
+--parseExpression (NodeAndExprN (l term) m r)
+--    | r /= EmptyTree = ExprAnd (parseExpression m) $ parseExpression r
+--    | otherwise = parseExpression m 
+--
+--parseExpression (NodeUnaryRelExpr (l term) r)
+--    | l == TermNot = ExprNot parseExpression r
+--    | otherwise = parseExpression r
 
-parseExpression (NodeUnaryRelExpr (l term) r)
-    | l == TermNot = ExprNot parseExpression r
-    | otherwise = parseExpression r
+--parseExpression (NodeRelExpr l) = parseExpression l
+--
 
-parseExpression (NodeRelExpr l) = parseExpression l
+parseExpression _ = ExprValueInt 2
+parseExpression (NodeSumExpr factor next) = ExprAdd (parseFactor l) $ parseExpression r 
 
-parseExpression (NodeSumExpr l r) = ExprAdd (ExprValue 1) $ parseExpression r 
+parseExpression (NodeSumExprN _ factor next)
+    | r /= EmptyTree = ExprAdd (parse factor) (parseExpression next)
+    | otherwise = parse factor 
 
-parseExpression (NodeSumExprN l m r)
-    | r /= EmptyTree = ExprAdd (ExprValue 2) (parseExpression r)
-    | otherwise = ExprValue 9
+parseExpression (NodeMulExpr factor next)
+    | next /= EmptyTree = ExprMul (parse factor) $ parseExpression next 
+    | otherwise = parse factor
 
-parseExpression (NodeMulExpr l r) = ExprMul (ExprValue 1) $ parseExpression r
+parseExpression (NodeMulExprN _ factor next)
+    | next /= EmptyTree = ExprMul (parse factor) $ parseExpression next
+    | otherwise = parse factor
 
-parseExpression (NodeMulExprN l m r)
-    | r /= EmptyTree = ExprMul (ExprValue 2) (parseExpression r)
-    | otherwise = ExprValue 3 
+parse (NodeFactor v) = parse v 
 
+parse (NodeMutable (Leaf (TermId id)) _ expr _)
+    | expr /= EmptyTree = ExprSubscript (ExprName id) $ parseExpression expr
+    | otherwise = ExprName id
+
+parse (NodeImmutable l m r)
+    | l == TermLParen = parseExpression m
+    | l == NodeCall = parseExpression l 
+    | l == Constant = parseExpression l
+
+parse (NodeCall id _ args _) = ExprFuncCall (ExprName id) $ (ExprArgs parseExpression args)
+
+parse (NodeConstant (Leaf (TermNumConst x))) = ExprValueInt x
+parse (NodeConstant (Leaf (TermCharConst x))) = ExprValueChar x
+parse (NodeConstant (Leaf (TermStringConst x))) = ExprValueString x
+parse (NodeConstant (Leaf (TermBoolConst x))) = ExprValueBool x
+parse (NodeConstant x) = error $ "Got bullshit" ++ (show x)
 
 
 

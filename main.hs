@@ -6,15 +6,27 @@ import Control.Exception
 
 import ParserTypes
 import ParseTree
-import Parser
+import Ast
 
-testVarTerms = [TermInt, TermId, TermLSqBracket, TermNumConst, TermRSqBracket, TermColon, TermBackQuote]
+--testVarTerms = [TermInt, TermId, TermLSqBracket, TermNumConst, TermRSqBracket, TermColon, TermBackQuote]
+--
+--testFuncTerms = [TermInt, TermId, TermLParen, TermInt, TermId, TermRParen, TermLBrace, TermRBrace]
+--
+--testIterStmt = [TermWhile, TermLParen, TermRParen]
+--
+--testAstExpression = []
+--
+--testParseAst = []
 
-testFuncTerms = [TermInt, TermId, TermLParen, TermInt, TermId, TermRParen, TermLBrace, TermRBrace]
+m1 = NodeMulExprN (Leaf TermEmpty) (NodeFactor (NodeConstant (Leaf (TermNumConst 2)))) EmptyTree
+m = NodeMulExprN (Leaf TermEmpty) (NodeFactor (NodeConstant (Leaf (TermNumConst 2)))) m1
+mm = NodeFactor (NodeConstant (Leaf (TermNumConst 5)))
 
-testIterStmt = [TermWhile, TermLParen, TermRParen]
+
 
 testReturnStmt = [TermReturn, TermBackQuote]
 testBreakStmt = [TermBreak, TermBackQuote]
+
+mmain = parseExpression (NodeMulExpr mm m)
 
 

@@ -32,12 +32,12 @@ data ParseTree = EmptyTree
                | NodeReturnStmt Terminal ParseTree Terminal
                | NodeBreakStmt Terminal Terminal
 
-               | NodeExpr ParseTree Terminal ParseTree
+               | NodeExpr ParseTree ParseTree ParseTree
                | NodeSimpleExpr ParseTree ParseTree
-               | NodeSimpleExprN Terminal ParseTree ParseTree
+               | NodeSimpleExprN ParseTree ParseTree ParseTree
                | NodeAndExpr ParseTree ParseTree
-               | NodeAndExprN Terminal ParseTree ParseTree
-               | NodeUnaryRelExpr Terminal ParseTree
+               | NodeAndExprN ParseTree ParseTree ParseTree
+               | NodeUnaryRelExpr ParseTree ParseTree
 
                | NodeRelExpr ParseTree
                | NodeSumExpr ParseTree ParseTree
@@ -46,13 +46,13 @@ data ParseTree = EmptyTree
                | NodeMulExprN ParseTree ParseTree ParseTree
                 
                | NodeSumOp Terminal
-               | NodeMulOp Terminal
+               | NodeMulOp ParseTree
                | NodeFactor ParseTree
-               | NodeMutable Terminal
+               | NodeMutable ParseTree
                | NodeImmutable Terminal ParseTree Terminal
                | NodeCall Terminal Terminal ParseTree Terminal
                | NodeArgs ParseTree
-               | NodeConstant Terminal
+               | NodeConstant ParseTree
                deriving (Show, Read, Eq)
 
 -- It's a nice util called graphviz(gnu package)
