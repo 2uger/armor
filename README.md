@@ -1,16 +1,10 @@
-# TODO:
-* Think about right representation of intermediate info
-  between parser function(return code or error...)
-* After write parser through the end
-* Output is parse Tree via GRAPHVIZ
-* Represent all nodes in ast(try to build one)
-# Compiler for C-ish language
-Use Haskell for that(pattern matching, functional language...).
-Start from basic model of compiler and write module after module.
-Implement full C compiler is hard as we know...
-So it's implement simple grammar in grammar.txt
-
-Basic structure is:
+### Main parts of syntax analysis:
+  - Lexer (Lexer.hs)
+  - Parser (Parser.hs)
+  -- Create concrete parse tree with nodes from ParseTree.hs
+  - Abstract syntax tree (Ast.hs)
+  -- Define all AST node types(processing simple expression)
+### Short overview of what to think about:
   - Lexical analyzer(simple tokens analyz)
     * Regular expression and FSM
     * Think about DFA vs NFA
@@ -33,7 +27,6 @@ Basic structure is:
           such parser in Haskell.
     * AST vs parse tree(concrete)
     * Parse tree could be represented as production, AST not!!!
-  - Semantic analyzer(It's all about semantic correctness)
-  - Intermediate code representation
-  - Code optimizer
-  - Assembly output
+  - Ast
+    * Creating AST node types from ADT in Haskell
+    * Think about pattern to be able to iterating through tree with different purposes
