@@ -69,18 +69,6 @@ tokenByState state
     | state == 26  = TermNumConst
     | state == 25  = TermId
     | state == 99 = TermEmpty
-   -- | state == 3  = TokenMul
-   -- | state == 4  = TokenEqual
-   -- | state == 5  = TokenLParen
-   -- | state == 6  = TokenRParen
-   -- | state == 7  = TokenWhiteSpace
-   -- | state == 8  = TokenSemicolon
-   -- | state == 12 = TokenTypeInt
-   -- | state == 14 = TokenID
-   -- | state == 16 = TokenNum
-   -- | state == 99 = TokenInvalid tokenStr)
-   -- | otherwise = (False, TokenNum)
-
 
 -- nextState consume initial state and next char
 -- :return (next state, should you consume next symbol)
@@ -181,30 +169,3 @@ nextState 24 c
     | c `elem` ['1'..'9'] = (24, True, True)
     | c == ' ' = (25, True, True)
     | otherwise = error "Unexpected symbol while pars Id"
---nextState 9 c
---        | c == 'n' = (10, True)
---        | c `elem` ['a'..'z'] || c `elem` ['1'..'9'] = (13, True)
---        | otherwise = (99, True)
---
---nextState 10 c
---        | c == 't' = (11, True)
---        | c `elem` ['a'..'z'] || c `elem` ['1'..'9'] = (13, True)
---        | otherwise = (99, True)
---
---nextState 11 c
---        | c == ' ' = (12, False)
---        | c `elem` ['a'..'z'] || c `elem` ['1'..'9'] = (13, True)
---        | otherwise = (99, True)
---
---nextState 13 c
---        | c `elem` ['a'..'z'] || c `elem` ['1'..'9'] = (13, True)
---        | c == '_' = (13, True)
---        | c == ' ' = (14, False)
---        | otherwise = (99, True) 
---
---nextState 15 c
---        | c `elem` ['1'..'9'] = (15, True)
---        | c `elem` ['a'..'z'] = (13, True)
---        | c `elem` ['(', ')', '*', '=', ';', '+', '-'] = (16, False)
---        | c == ' ' = (16, False)
---        | otherwise = (15, False)

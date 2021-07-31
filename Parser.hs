@@ -64,6 +64,7 @@ parse VarDeclInit (terms, nodes) =
   where
     res = Just (terms, []) >>= parse VarDeclId >>= parseTerm TermColon >>= parse SimpleExpr
 
+
 parse VarDeclId (terms, nodes) =
     case res of
         Just (nterms, nnodes) -> Just (nterms, [NodeVarDeclId (nnodes !! 0) (nnodes !! 1) (nnodes !! 2) (nnodes !! 3)] ++ nodes)
@@ -71,17 +72,32 @@ parse VarDeclId (terms, nodes) =
   where
     res = Just (terms, []) >>= parseTerm TermId >>= parseTerm TermLSqBracket >>= parseTerm TermNumConst >>= parseTerm TermRSqBracket
 
+
 parse SimpleExpr (terms, nodes) = Just (terms, [NodeSimpleExpr EmptyTree EmptyTree] ++ nodes)
 
---createParseTreeNode :: ParseTree -> [ParseTree] -> ParseTree
---createParseTreeNode pt nodes
---    | length nodes == 1 = pt (nodes !! 0)
---    | length nodes == 2 = pt (nodes !! 0) (nodes !! 1)
---    | length nodes == 3 = pt (nodes !! 0) (nodes !! 1) (nodes !! 2)
---    | length nodes == 4 = pt (nodes !! 0) (nodes !! 1) (nodes !! 2) (nodes !! 3)
---    | length nodes == 5 = pt (nodes !! 0) (nodes !! 1) (nodes !! 2) (nodes !! 3) (nodes !! 4)
 
+parse SumExpr (terms, nodes) =
+    case res of
+        Just (nterms, nnodes) -> Just (nterms, [NodeSumExpr (nnodes !! 0) (nnodes !! 1)] ++ nodes)
+        _                    -> error $ nonTermError SumExpr
+  where
+    res = Just (terms, []) >>= parse MulExpr >>= parse SumExprN
+
+parse MulExpr (terms, nodes) =
+    case res of
+        Just (nterms, nnodes) -> Just (nterms, [NodeMulExpr (nnodes !! 0) (nnodes !! 1)] ++ nodes)
+        _                    -> error $ nonTermError MulExpr
+    
+  where
+    res = Just (terms, []) >>= parse Factor >>= parse MulExprN
+
+parse Factor (terms, nodes) = Just (terms, [NodeFactor EmptyTree])
+parse MulExprN (terms, nodes) = Just (terms, [NodeMulExprN EmptyTree EmptyTree EmptyTree])
+
+
+-- To parse terminal, called from different places
 parseTerm :: Terminal -> ([Terminal], [ParseTree]) -> Maybe ([Terminal], [ParseTree])
+
 parseTerm expect ((term:xs), nodes)
     | expect == term = Just (xs, [Leaf term] ++ nodes) 
     | otherwise = error $ termError [expect] term

@@ -3,15 +3,15 @@ module ParserTypes where
 -- Terminal will represent tokens from Lexer part
 -- Just to make it comfortable to work with them while 
 -- make parsing stage
-data Terminal = TermId String
-              | TermInt Int
-              | TermBool Bool 
-              | TermChar Char
+data Terminal = TermId 
+              | TermInt
+              | TermBool
+              | TermChar
 
-              | TermNumConst Int
-              | TermCharConst Char
-              | TermStringConst String
-              | TermBoolConst Bool
+              | TermNumConst
+              | TermCharConst
+              | TermStringConst
+              | TermBoolConst
 
               | TermBackQuote -- ; 
               | TermComma     -- ,
@@ -87,6 +87,7 @@ data NonTerminal = Program
                  | SumExpr
                  | SumExprN
                  | MulExpr
+                 | MulExprN
                  | SumOp
                  | MulOp
 

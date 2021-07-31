@@ -26,11 +26,6 @@ data ParseTree = EmptyTree
                | NodeCompoundStmt Terminal ParseTree Terminal
                | NodeStmtList ParseTree ParseTree
                | NodeStmtListN ParseTree
-               | NodeLocalDecl ParseTree ParseTree
-               | NodeLocalDeclN ParseTree ParseTree
-               | NodeIterStmt Terminal Terminal ParseTree Terminal ParseTree
-               | NodeReturnStmt Terminal ParseTree Terminal
-               | NodeBreakStmt Terminal Terminal
 
                | NodeExpr ParseTree ParseTree ParseTree
                | NodeSimpleExpr ParseTree ParseTree

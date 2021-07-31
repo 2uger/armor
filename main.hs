@@ -23,10 +23,18 @@ m = NodeMulExprN (Leaf TermEmpty) (NodeFactor (NodeConstant (Leaf (TermNumConst 
 mm = NodeFactor (NodeConstant (Leaf (TermNumConst 5)))
 
 
+and = ExprAnd (ExprValueInt 5) (ExprValueInt 44)
+mul = ExprMul (ExprValueInt 4) (ExprValueInt 1991) 
+sum_1 = ExprAdd (ExprValueInt 20) mul
+sum_2 = ExprAdd (ExprValueInt 25) sum_1
+sum_string = ExprAdd (ExprValueString "Hello") (ExprValueString " world")
+
+aand = ExprOr (ExprValueBool True) (ExprValueBool False)
+
 
 testReturnStmt = [TermReturn, TermBackQuote]
 testBreakStmt = [TermBreak, TermBackQuote]
 
-mmain = parseExpression (NodeMulExpr mm m)
+mmain = expression aand 
 
 

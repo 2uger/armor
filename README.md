@@ -30,3 +30,6 @@
   - Ast
     * Creating AST node types from ADT in Haskell
     * Think about pattern to be able to iterating through tree with different purposes
+
+### TODO:
+Actually build a language
