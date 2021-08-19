@@ -66,8 +66,8 @@ tokenByState state
 
     | state == 16  = TermInt
     | state == 23  = TermBool
-    | state == 26  = TermNumConst
     | state == 25  = TermId
+    | state == 26  = TermNumConst
     | state == 99 = TermEmpty
 
 -- nextState consume initial state and next char
@@ -95,29 +95,11 @@ nextState 0 c
     
     -- Start state for TermInt
     | c == 'i' = (14, True, False)
-    -- Start state for TermBool
-    | c == 'b' = (15, True, False)
-    -- Start state for TermChar
-    | c == 'c' = (16, True, False)
-
-   -- -- Start state for TermStatic
-   -- | c == 's' = (17, True)
-   -- -- Start state for TermWhile
-   -- | c == 's' = (18, True)
-   -- -- Start state for TermReturn
-   -- | c == 's' = (19, True)
-   -- -- Start state for TermBreak
-   -- | c == 's' = (20, True)
+    | c == 'b' = (17, True, False)
 
    -- -- Start state for TermNumConst
     | c `elem` ['1'..'9'] = (26, True, False)
-   -- -- Start state for TermStringConst
-   -- | c `elem` ['a'..'z'] = (22, True)
-   -- -- Start state for TermCharConst
-   -- | c == '\'' = (23, True)
 
-   -- Start state for TermId
-    | c `elem` ['a'..'z'] = (24, True, False)
     | otherwise = error "I dont know what is it"
 
 nextState 14 c
@@ -142,30 +124,26 @@ nextState 18 c
     | otherwise = (34, True, False)
 
 nextState 19 c
-    | c == 'l' = (18, True, False)
+    | c == 'l' = (23, True, False)
     | otherwise = (34, True, False)
+
+nextState 23 c
+    | c == ' ' = (23, True, True)
+    | otherwise = (99, False, True)
 
 nextState 20 c
     | c == ' ' = (20, True, True)
     | c `elem` ['a'..'z'] = (34, True, False)
     | otherwise = error "Unexpected symbol after type declaration"
 
--- For char type
--- nextState 21-25
 -- For NumConst
 nextState 26 c
     | c `elem` ['0'..'9'] = (26, True, False)
-    | c `elem` [']', ';', ')'] = (26, False, True)
+    | c `elem` [']', ';', ')', '+', '-'] = (26, False, True)
     | c == ' ' = (26, True, True)
     | otherwise = error "Unexpected symbol after numbers"
 
 nextState 34 c
     | c `elem` ['a' .. 'z'] = (34, True, False)
     | c `elem` ['0' .. '9'] = (34, True, False)
-    | otherwise = (34, True, True)
--- For id name
-nextState 24 c
-    | c `elem` ['a'..'z'] = (24, True, False)
-    | c `elem` ['1'..'9'] = (24, True, True)
-    | c == ' ' = (25, True, True)
-    | otherwise = error "Unexpected symbol while pars Id"
+    | otherwise = (23, True, True)

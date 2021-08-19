@@ -19,46 +19,50 @@ import ParserTypes
 --      int m = x * 45;
 --      return m;
 -- };
--- data Ast = NodeStmt Statement Ast
---          | NodeDeclaration Declaration Ast
---          | NodeExpression Expression Ast
---          | NodeEmpty
+data Ast = NodeStmt Statement Ast
+         | NodeDeclaration Declaration Ast
+         | NodeExpression Expression Ast
+         | NodeEmpty
+
+data Declaration = VarDeclaration { varName :: String
+                                  , varType :: Type
+                                  , varInitValue :: Expression }
+                 | FuncDeclaration { funcName :: String
+                                   , funcType :: Type
+                                   , funcBody :: Statement} 
+                 deriving(Show, Read)
+
+data Type = TypeBool 
+          | TypeInt 
+          | TypeChar 
+          | TypeVoid
+          | TypeArray
+          | TypeFunction Type ParamList
+          deriving(Show, Read)
+
+data ParamList = ParamList String Type ParamList deriving(Show, Read)
 -- 
--- data Declaration = VarDeclaration { varName :: String
---                                   , varType :: Type
---                                   , varInitValue :: Expression }
---                  | FuncDeclaration { funcName :: String
---                                    , funcType :: Type
---                                    , funcBody :: StatementBlock} 
---                  deriving(Show, Read)
--- 
--- data Type = TypeBool 
---           | TypeInt 
---           | TypeChar 
---           | TypeVoid
---           | TypeArray
---           | TypeFunction Type ParamList
--- 
--- data ParamList = ParamList String Type ParamList
--- 
--- -- ****** Statement ******
--- data Statement = StmtLocalVarDecl VarDeclaration 
---                | StmtExpression Expression
---                | StmtIfElse IfElse 
---                | StmtForLoop ForLoop
---                | StmtReturn Return
---                  deriving(Show, Read)
--- 
--- data IfElse = IfElse { evaluateExpr :: Expression
---                              , ifBody :: Statement
---                              , elseBody :: Statement }
--- 
--- data ForLoop = ForLoop { foLoopInitExpr :: Expression
---                        , forLoopevaluateExpr :: Expression
---                        , nextExpr :: Expression
---                        , body :: Expression }
--- 
--- data Return = Return Expression
+-- ****** Statement ******
+data Statement = StmtLocalVarDecl Declaration 
+               | StmtExpression Expression
+               | StmtIfElse IfElse 
+               | StmtForLoop ForLoop
+               | StmtReturn Return
+               | StmtBlock Statement
+                 deriving(Show, Read)
+
+data IfElse = IfElse { evaluateExpr :: Expression
+                     , ifBody :: Statement
+                     , elseBody :: Statement }
+                     deriving(Show, Read)
+
+data ForLoop = ForLoop { foLoopInitExpr :: Expression
+                       , forLoopevaluateExpr :: Expression
+                       , nextExpr :: Expression
+                       , body :: Expression }
+                       deriving(Show, Read)
+
+data Return = Return Expression deriving(Show, Read)
 -- 
 --  Statement block will contain multiple statements
 
@@ -115,6 +119,7 @@ expression exp =
         ExprValueBool value -> Just (ExprValueBool value)
 
 -- Adding Int type
+expr :: OperationType -> Maybe Expression -> Maybe Expression -> Maybe Expression
 expr op (Just (ExprValueInt l_value)) (Just (ExprValueInt r_value))
     | op == Sum = Just (ExprValueInt (l_value + r_value))
     | op == Sub = Just (ExprValueInt (l_value - r_value))
