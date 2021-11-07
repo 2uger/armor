@@ -13,13 +13,14 @@ lexer = Token.makeTokenParser style
     names = ["if", "else"]
     style = emptyDef {
                Token.commentLine = "//"
-             , Token.commentStart = "/*"
-             , Token.commentEnd = "*/"
+             , Token.commentStart = "**"
+             , Token.commentEnd = "**"
              , Token.caseSensitive = True
              , Token.reservedOpNames = ops
              , Token.reservedNames = names
              }
 
+-- Call this functions to parse different types of tokens
 integer    = Token.integer lexer
 float      = Token.float lexer
 char       = Token.charLiteral lexer
