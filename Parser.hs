@@ -1,105 +1,50 @@
 module Parser where
 
-import ParserTypes
-import ParseTree
+import Text.Parsec (parse, many)
+import Text.Parsec.String (Parser)
 
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import Ast
+import Lexer
 
-type FirstSet = Set.Set Terminal
-type FirstSetMap = Map.Map NonTerminal FirstSet
+parseInt :: Parser Expression
+parseInt = ExprInt <$> integer
 
-nonTermError :: NonTerminal -> String
-nonTermError nterm = "Catching error while trying parse non terminal rule: " ++ show nterm
+parseChar :: Parser Expression
+parseChar = ExprChar <$> char
 
-termError :: [Terminal] -> Terminal -> String
+parseVar :: Parser Expression
+parseVar = Variable <$> identifier
 
-termError expect actual = "\nCatching error while trying parse terminal\nExpected: " ++ show expect ++ "\nActual: " ++ show actual
+parseIfElse :: Parser Expression
+parseIfElse = do
+    reserved "if"
+    cond <- parens expr
+    ifBranch <- block
+    elseBranch <- block
 
-termError expect _ = "\nTrying to parse terminal " ++ show expect ++ "\nBut there is empty one\n"
-
--- Return terminals and node for parse tree
--- throwing an error when catch false terminal
-
-parseProgram :: [Terminal] -> Maybe ([Terminal], ParseTree)
-parseProgram terms =
-    case res of
-        Just (nterms, nnodes) -> Just (nterms, NodeProgram (nnodes !! 0))
-        _                     -> error $ nonTermError Program
-  where
-    res = Just (terms, []) >>= parse DeclList
-
-parse :: NonTerminal -> ([Terminal], [ParseTree]) -> Maybe ([Terminal], [ParseTree])
-
-parse DeclList (terms, nodes) =
-    case res of
-        Just (nterms, nnodes) -> Just (nterms, [NodeDeclList (nnodes !! 0)] ++ nodes)
-        _                     -> error $ nonTermError DeclList
-  where
-    res = Just (terms, []) >>= parse Decl
-
-parse Decl (terms, nodes) =
-    case res of
-        Just (nterms, nnodes) -> Just (nterms, [NodeDecl (nnodes !! 0)] ++ nodes)
-        _                     -> error $ nonTermError DeclList
-  where
-    res = Just (terms, []) >>= parse VarDecl
+    return $ IfElse cond ifBranch elseBranch
 
 
-parse VarDecl (terms, nodes) =
-    case res of
-        Just (nterms, nnodes) -> Just (nterms, [NodeVarDecl (nnodes !! 0) (nnodes !! 1) (nnodes !! 2)] ++ nodes)
-        _                     -> error $ nonTermError VarDecl
-  where
-    res = Just (terms, []) >>= parse TypeSpec >>= parse VarDeclInit >>= parseTerm TermBackQuote
+block :: Parser Expression
+block = Block <$> braces $ many $
+    do exp <- expr
+       reserved ";"
+       return exp
 
-parse TypeSpec ((term:xs), nodes)
-    | term `elem` [TermInt, TermBool, TermChar] = Just (xs, [Leaf term] ++ nodes)
-    | otherwise = error $ termError [TermInt, TermBool, TermChar] term
+sumParse :: Parser Integer
+sumParse = do
+  first <- integer
+  reservedOp "+"
+  second <- integer
+  return (first + second)
 
-parse VarDeclInit (terms, nodes) =
-    case res of
-        Just (nterms, nnodes) -> Just (nterms, [NodeVarDeclInit (nnodes !! 0) (nnodes !! 1) (nnodes !! 2)] ++ nodes)
-        _                     -> error $ nonTermError VarDeclInit
-  where
-    res = Just (terms, []) >>= parse VarDeclId >>= parseTerm TermColon >>= parse SimpleExpr
-
-
-parse VarDeclId (terms, nodes) =
-    case res of
-        Just (nterms, nnodes) -> Just (nterms, [NodeVarDeclId (nnodes !! 0) (nnodes !! 1) (nnodes !! 2) (nnodes !! 3)] ++ nodes)
-        _                     -> error $ nonTermError DeclList
-  where
-    res = Just (terms, []) >>= parseTerm TermId >>= parseTerm TermLSqBracket >>= parseTerm TermNumConst >>= parseTerm TermRSqBracket
+increment :: Parser Double
+increment = do
+    iff <- reserved "ifff"
+    first <- float
+    reservedOp "++"
+    return (first + 2)
 
 
-parse SimpleExpr (terms, nodes) = Just (terms, [NodeSimpleExpr EmptyTree EmptyTree] ++ nodes)
 
-
-parse SumExpr (terms, nodes) =
-    case res of
-        Just (nterms, nnodes) -> Just (nterms, [NodeSumExpr (nnodes !! 0) (nnodes !! 1)] ++ nodes)
-        _                    -> error $ nonTermError SumExpr
-  where
-    res = Just (terms, []) >>= parse MulExpr >>= parse SumExprN
-
-parse MulExpr (terms, nodes) =
-    case res of
-        Just (nterms, nnodes) -> Just (nterms, [NodeMulExpr (nnodes !! 0) (nnodes !! 1)] ++ nodes)
-        _                    -> error $ nonTermError MulExpr
-    
-  where
-    res = Just (terms, []) >>= parse Factor >>= parse MulExprN
-
-parse Factor (terms, nodes) = Just (terms, [NodeFactor EmptyTree])
-parse MulExprN (terms, nodes) = Just (terms, [NodeMulExprN EmptyTree EmptyTree EmptyTree])
-
-
--- To parse terminal, called from different places
-parseTerm :: Terminal -> ([Terminal], [ParseTree]) -> Maybe ([Terminal], [ParseTree])
-
-parseTerm expect ((term:xs), nodes)
-    | expect == term = Just (xs, [Leaf term] ++ nodes) 
-    | otherwise = error $ termError [expect] term
-
-parseTerm expect ([], nodes) = error $ termError [expect] TermEmpty 
+runSumParse = parse parseVar "<stdin>"
