@@ -1,34 +1,63 @@
 module Parser where
 
-import Text.Parsec (parse, many)
+import Text.Parsec
 import Text.Parsec.String (Parser)
 
 import Ast
 import Lexer
 
+parseOp :: Parser String
+parseOp = do
+    whitespace
+    operand <- operator
+    whitespace
+    return operand
 
 parseInt :: Parser Expression
-parseInt = ExprInt <$> integer
+parseInt = ExprValueInt <$> integer
 
 parseChar :: Parser Expression
-parseChar = ExprChar <$> char
+parseChar = ExprValueChar <$> cchar
 
-parseVar :: Parser Expression
-parseVar = Variable <$> identifier
+parseExpr :: Parser Expression
+parseExpr = try parseInt 
+        <|> try parseChar 
+        <|> try parseIncrem
+        <|> try parseDefine
+        <|> try parseIfElse
+
+parseExprType :: Parser ExprType
+parseExprType = do
+    exprType <- identifier
+    case exprType of
+        "int" -> return TypeInt
+        "char" -> return TypeChar
+        "bool" -> return TypeBool
+        "void" -> return TypeVoid
+        _      -> return TypeVoid
+
+parseDefine :: Parser Expression
+parseDefine = do
+    varType <- parseExprType
+    varName <- identifier
+    reserved "="
+    value <- try parseInt <|> try parseChar
+    return $ VarDef varType varName value
 
 parseIfElse :: Parser Expression
 parseIfElse = do
     reserved "if"
-    cond <- parens expr
-    ifBranch <- block
-    elseBranch <- block
+    cond <- parens parseExpr
+    ifBranch <- parseBlock
+    reserved "else"
+    elseBranch <- parseBlock
 
-    return $ IfElse cond ifBranch elseBranch
+    return $ ExprIfElse cond ifBranch elseBranch
 
 
-block :: Parser Expression
-block = Block <$> braces $ many $
-    do exp <- expr
+parseBlock :: Parser [Expression]
+parseBlock = braces $ many $
+    do exp <- parseExpr
        reserved ";"
        return exp
 
@@ -39,13 +68,35 @@ sumParse = do
   second <- integer
   return (first + second)
 
-increment :: Parser Double
-increment = do
-    iff <- reserved "ifff"
-    first <- float
+parseIncrem :: Parser Expression
+parseIncrem = do
+    varRef <- identifier
     reservedOp "++"
-    return (first + 2)
+    return $ ExprIncrem $ VarRef varRef
 
+parseDecrem :: Parser Integer
+parseDecrem = do
+    value <- integer
+    reservedOp "--"
+    return (value - 1)
 
+parseFunction :: Parser Expression
+parseFunction = do
+    retType <- parseExprType
+    funcName <- identifier
+    args <- parens $ commaSep parseDefine
+    retExpr <- optionMaybe $ do
+        reserved "return"
+        retExpr <- parseIncrem
+        return retExpr
+    reserved "->"
+    exprBlock <- parseBlock
+    return $ FuncDef retType funcName args exprBlock retExpr
 
-runSumParse = parse parseVar "<stdin>"
+parseMainFunc :: Parser Expression
+parseMainFunc = do
+    funcDef <- parseFunction
+    reservedOp ";"
+    return funcDef
+
+parseSourceCode = parse parseMainFunc "<stdin>"

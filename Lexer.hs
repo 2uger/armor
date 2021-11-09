@@ -1,8 +1,8 @@
 module Lexer where
 
-import Text.Parsec (parse)
 import Text.Parsec.String (Parser)
 import Text.Parsec.Language (emptyDef)
+import Text.Parsec.Prim (many)
 
 import qualified Text.Parsec.Token as Token
 
@@ -10,7 +10,7 @@ lexer :: Token.TokenParser ()
 lexer = Token.makeTokenParser style
   where
     ops = [ "+", "++", "*", "-", "/"]
-    names = ["if", "else"]
+    names = ["if", "else", "reserved"]
     style = emptyDef {
                Token.commentLine = "//"
              , Token.commentStart = "**"
@@ -23,7 +23,7 @@ lexer = Token.makeTokenParser style
 -- Call this functions to parse different types of tokens
 integer    = Token.integer lexer
 float      = Token.float lexer
-char       = Token.charLiteral lexer
+cchar      = Token.charLiteral lexer
 string     = Token.stringLiteral lexer
 parens     = Token.parens lexer
 braces     = Token.braces lexer
@@ -33,3 +33,9 @@ identifier = Token.identifier lexer
 whitespace = Token.whiteSpace lexer
 reserved   = Token.reserved lexer
 reservedOp = Token.reservedOp lexer
+
+operator :: Parser String
+operator = do
+    c <- Token.opStart emptyDef
+    cs <- many $ Token.opLetter emptyDef
+    return (c:cs)
