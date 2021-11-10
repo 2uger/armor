@@ -25,6 +25,13 @@ data ExprType = TypeBool
               | TypeFunction ExprType ExprType
               deriving(Show, Read, Eq)
 
+data BinaryOp = OpMultiply
+              | OpDivide
+              | OpPlus
+              | OpMinus
+              deriving(Show, Read, Eq)
+
+
 -- ****** Expression ******
 data Expression = ExprEmpty
                 -- Use variable that was declared earlier
@@ -36,9 +43,10 @@ data Expression = ExprEmpty
                 | ExprValueBool Bool
 
                 | ExprIncrem Expression
+                | ExprDecrem Expression
 
                 | Block [Expression]
-                | ExprOp String Expression Expression
+                | ExprBinOp BinaryOp Expression Expression
 
                 | FuncDef { retType :: ExprType 
                           , funcName :: String 

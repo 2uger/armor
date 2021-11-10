@@ -3,28 +3,34 @@ module Parser where
 import Text.Parsec
 import Text.Parsec.String (Parser)
 
+import qualified Text.Parsec.Expr as Ex
+
 import Ast
 import Lexer
 
-parseOp :: Parser String
-parseOp = do
-    whitespace
-    operand <- operator
-    whitespace
-    return operand
+binary s f assoc = Ex.Infix (reservedOp s >> return (ExprBinOp f)) assoc
+
+table = [[binary "*" OpMultiply Ex.AssocLeft,
+          binary "/" OpDivide Ex.AssocLeft]
+        ,[binary "+" OpPlus Ex.AssocLeft,
+          binary "-" OpMinus Ex.AssocLeft]]
+
+parseExpr :: Parser Expression
+parseExpr = Ex.buildExpressionParser table factor
+
+factor :: Parser Expression
+factor = try parseInt 
+     <|> try parseChar 
+     <|> try parseIncrem
+     <|> try parseDefine
+     <|> try parseIfElse
+     <|> parens parseExpr
 
 parseInt :: Parser Expression
 parseInt = ExprValueInt <$> integer
 
 parseChar :: Parser Expression
 parseChar = ExprValueChar <$> cchar
-
-parseExpr :: Parser Expression
-parseExpr = try parseInt 
-        <|> try parseChar 
-        <|> try parseIncrem
-        <|> try parseDefine
-        <|> try parseIfElse
 
 parseExprType :: Parser ExprType
 parseExprType = do
@@ -34,14 +40,13 @@ parseExprType = do
         "char" -> return TypeChar
         "bool" -> return TypeBool
         "void" -> return TypeVoid
-        _      -> return TypeVoid
 
 parseDefine :: Parser Expression
 parseDefine = do
     varType <- parseExprType
     varName <- identifier
     reserved "="
-    value <- try parseInt <|> try parseChar
+    value <- parseExpr
     return $ VarDef varType varName value
 
 parseIfElse :: Parser Expression
@@ -54,31 +59,23 @@ parseIfElse = do
 
     return $ ExprIfElse cond ifBranch elseBranch
 
-
 parseBlock :: Parser [Expression]
 parseBlock = braces $ many $
     do exp <- parseExpr
        reserved ";"
        return exp
 
-sumParse :: Parser Integer
-sumParse = do
-  first <- integer
-  reservedOp "+"
-  second <- integer
-  return (first + second)
-
 parseIncrem :: Parser Expression
 parseIncrem = do
-    varRef <- identifier
+    varIdent <- identifier
     reservedOp "++"
-    return $ ExprIncrem $ VarRef varRef
+    return $ ExprIncrem $ VarRef varIdent
 
-parseDecrem :: Parser Integer
+parseDecrem :: Parser Expression
 parseDecrem = do
-    value <- integer
+    varIdent <- identifier
     reservedOp "--"
-    return (value - 1)
+    return $ ExprDecrem $ VarRef varIdent
 
 parseFunction :: Parser Expression
 parseFunction = do

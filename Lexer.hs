@@ -10,7 +10,7 @@ lexer :: Token.TokenParser ()
 lexer = Token.makeTokenParser style
   where
     ops = [ "+", "++", "*", "-", "/"]
-    names = ["if", "else", "reserved"]
+    names = ["if", "else", "return"]
     style = emptyDef {
                Token.commentLine = "//"
              , Token.commentStart = "**"
