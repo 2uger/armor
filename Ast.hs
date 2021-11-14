@@ -1,5 +1,7 @@
 module Ast where
 
+import Data.List
+
 -- Block structured language consists of three main constructions
 -- declaration(variable declaration,
 --             func declaration) 
@@ -46,15 +48,59 @@ data Expression = ExprEmpty
                 | ExprDecrem Expression
 
                 | Block [Expression]
+                | FuncArgs [Expression]
                 | ExprBinOp BinaryOp Expression Expression
 
                 | FuncDef { retType :: ExprType 
                           , funcName :: String 
-                          , funcArgs :: [Expression] 
-                          , funcBlock :: [Expression] 
-                          , retExpr :: Maybe Expression }
-                | ExprIfElse Expression [Expression] [Expression]
+                          , funcArgs :: Expression 
+                          , funcBlock :: Expression }
+                | RetExpr Expression
+                | ExprIfElse Expression Expression Expression
                 deriving (Show, Read, Eq)
+
+class PrettyExpr a where
+    prettyPrint :: a -> [String]
+
+-- Return list of expression for all type of Expression
+-- ["exp1", "exp2"] so we can add indent into certain elements
+instance PrettyExpr Expression where
+    prettyPrint expr = case expr of
+        VarRef ref -> [unwords ["Var", ref]]
+        VarDef t n expr -> [unwords [show t, n, "=", unwords $ prettyPrint expr]]
+
+        FuncDef ret name args block -> [unwords ["FUNCTION: ", show ret, show name], unwords $ prettyPrint args] 
+                                       ++  prettyPrint block
+        ExprIfElse stm exprIf exprElse -> ["IF ("] ++ prettyPrint stm ++ [") {"] 
+                                          ++ (indentBlock $ prettyPrint exprIf) 
+                                          ++ ["} " ++ "ELSE" ++ " {"] 
+                                          ++ (indentBlock $ prettyPrint exprElse) ++ ["}"]
+
+        FuncArgs args -> ["ARGS: " ++ (joinC $ map (unwords . prettyPrint) args)]
+        RetExpr e -> ["RETURN "  ++ (unwords $ prettyPrint e)]
+
+        Block e -> "BLOCK: {" : concat (map (indentBlock . prettyPrint) e)
+
+        ExprValueInt val -> [show val]
+        ExprValueChar val -> [show val]
+        ExprValueBool val -> [show val]
+
+        ExprBinOp op exprL exprR -> [(unwords $ prettyPrint exprL) 
+                                     ++ "  " 
+                                     ++ (show op) 
+                                     ++ "  " 
+                                     ++ (unwords $ prettyPrint exprR)]
+        ExprIncrem e -> [(unwords $ prettyPrint e) ++ "++"]
+        ExprDecrem e -> [(unwords $ prettyPrint e) ++ "--"]
+        _                -> ["Nothing"]
+
+indentBlock = map("  " ++)
+
+prettyAst expr = map (joinN . prettyPrint) expr
+
+joinN = intercalate "\n"
+joinC = intercalate ","
+
 
 ---- Simple expression interpreter
 --expression :: Expression -> Maybe Expression 
