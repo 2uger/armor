@@ -20,6 +20,13 @@ import Data.List
 -- };
 data Ast a = Leaf | Node a (Ast a) (Ast a)
 
+
+-- Every symbol can point to next symbol(for itself, actually) 
+-- but with different scope(linked list for scopes)
+data SymbolTable = Empty | SymbolTable { name :: String
+                                       , symbolType :: ExprType
+                                       , nextScope :: SymbolTable }
+
 data ExprType = TypeBool 
               | TypeInt 
               | TypeChar 
@@ -39,6 +46,7 @@ data Expression = ExprEmpty
                 -- Use variable that was declared earlier
                 | VarRef String 
                 | VarDef ExprType String Expression
+                | VarDecl ExprType String
                 -- Hardcode constant
                 | ExprValueInt Integer 
                 | ExprValueChar Char
@@ -57,6 +65,7 @@ data Expression = ExprEmpty
                           , funcBlock :: Expression }
                 | RetExpr Expression
                 | ExprIfElse Expression Expression Expression
+                | ExprStmt Expression Expression
                 deriving (Show, Read, Eq)
 
 class PrettyExpr a where

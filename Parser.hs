@@ -23,6 +23,7 @@ factor = try parseInt
      <|> try parseChar 
      <|> try parseIncrem
      <|> try parseDefine
+     <|> try parseDecl
      <|> try parseVar
      <|> try parseIfElse
      <|> try parseReturn
@@ -47,6 +48,19 @@ parseExprType = do
         "void" -> return TypeVoid
         _      -> return TypeVoid
 
+parseStmt :: Parser Expression
+parseStmt = do
+    exprL <- parseExpr
+    reserved "=="
+    exprR <- parseExpr
+    return $ ExprStmt exprL exprR
+
+parseDecl :: Parser Expression
+parseDecl = do
+    varType <- parseExprType
+    varName <- identifier
+    return $ VarDecl varType varName
+
 parseDefine :: Parser Expression
 parseDefine = do
     varType <- parseExprType
@@ -58,7 +72,7 @@ parseDefine = do
 parseIfElse :: Parser Expression
 parseIfElse = do
     reserved "if"
-    cond <- parens parseExpr
+    cond <- parens parseStmt
     ifBranch <- parseBlock
     reserved "else"
     elseBranch <- parseBlock
@@ -87,7 +101,7 @@ parseFunction :: Parser Expression
 parseFunction = do
     retType <- parseExprType
     funcName <- identifier
-    args <- parens $ commaSep parseDefine
+    args <- parens $ commaSep parseDecl
     reserved "->"
     exprBlock <- parseBlock
     return $ FuncDef retType funcName (FuncArgs args) (Block exprBlock)

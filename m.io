@@ -1,18 +1,17 @@
-int func (int m = 2, int c = 2) -> {
+int func (int m, int c) -> {
     int cwreturn = 2 + 2 * 56;
     int m = 2;
     // Hello
     m++;
-    if (int m = 22){
+    if (m == 22){
         char c = 'm';
-        char c = 'm';
-        if (int m = 22) {
-            char c = 'm';
+        if (m == 22) {
+            char r = 'm';
         } else { 
-            int m = 2;
+            int t = 2;
         };
     } else {
-        int m = 2;
+        int mmm = 2;
     };
-    return fjkdsl;
+    return m;
 };
