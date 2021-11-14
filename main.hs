@@ -4,6 +4,7 @@ import System.IO
 import System.Environment
 
 import Parser
+import Ast
 
 main = do
     args <- getArgs
@@ -12,5 +13,5 @@ main = do
         [filename] -> do 
             line <- readFile filename
             case parseSourceCode line of
-                Right res -> putStrLn $ show res
+                Right res -> putStrLn $ joinN $ prettyAst [res]
                 Left err -> print err

@@ -23,7 +23,9 @@ factor = try parseInt
      <|> try parseChar 
      <|> try parseIncrem
      <|> try parseDefine
+     <|> try parseVar
      <|> try parseIfElse
+     <|> try parseReturn
      <|> parens parseExpr
 
 parseInt :: Parser Expression
@@ -31,6 +33,9 @@ parseInt = ExprValueInt <$> integer
 
 parseChar :: Parser Expression
 parseChar = ExprValueChar <$> cchar
+
+parseVar :: Parser Expression
+parseVar = VarRef <$> identifier
 
 parseExprType :: Parser ExprType
 parseExprType = do
@@ -40,6 +45,7 @@ parseExprType = do
         "char" -> return TypeChar
         "bool" -> return TypeBool
         "void" -> return TypeVoid
+        _      -> return TypeVoid
 
 parseDefine :: Parser Expression
 parseDefine = do
@@ -57,7 +63,7 @@ parseIfElse = do
     reserved "else"
     elseBranch <- parseBlock
 
-    return $ ExprIfElse cond ifBranch elseBranch
+    return $ ExprIfElse cond (Block ifBranch) (Block elseBranch)
 
 parseBlock :: Parser [Expression]
 parseBlock = braces $ many $
@@ -82,13 +88,15 @@ parseFunction = do
     retType <- parseExprType
     funcName <- identifier
     args <- parens $ commaSep parseDefine
-    retExpr <- optionMaybe $ do
-        reserved "return"
-        retExpr <- parseIncrem
-        return retExpr
     reserved "->"
     exprBlock <- parseBlock
-    return $ FuncDef retType funcName args exprBlock retExpr
+    return $ FuncDef retType funcName (FuncArgs args) (Block exprBlock)
+
+parseReturn :: Parser Expression
+parseReturn = do
+    reserved "return"
+    expr <- parseExpr
+    return $ RetExpr expr
 
 parseMainFunc :: Parser Expression
 parseMainFunc = do

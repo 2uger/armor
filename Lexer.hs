@@ -21,6 +21,7 @@ lexer = Token.makeTokenParser style
              }
 
 -- Call this functions to parse different types of tokens
+integer :: Parser Integer
 integer    = Token.integer lexer
 float      = Token.float lexer
 cchar      = Token.charLiteral lexer
