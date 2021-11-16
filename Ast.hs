@@ -1,10 +1,10 @@
 module Ast where
 
 import Data.List
+import qualified Data.Map as Map
 
 -- Block structured language consists of three main constructions
--- declaration(variable declaration,
---             func declaration) 
+-- declaration(variable declaration, func declaration) 
 -- statement(statement is a process of somehow change programm state)
 -- expression(something that will have evaluated value
 --            2 + 2 will have value 4
@@ -18,14 +18,30 @@ import Data.List
 --      int m = x * 45;
 --      return m;
 -- };
-data Ast a = Leaf | Node a (Ast a) (Ast a)
+type GSymbolTable = [Symbol] 
 
+data Symbol = Symbol { symbName :: String
+                     , symbType :: SymbolType
+                     , size :: Int 
+                     , memory :: Int }
+                     deriving (Show, Eq)
 
--- Every symbol can point to next symbol(for itself, actually) 
--- but with different scope(linked list for scopes)
-data SymbolTable = Empty | SymbolTable { name :: String
-                                       , symbolType :: ExprType
-                                       , nextScope :: SymbolTable }
+data SymbolType = Var | Func deriving (Show, Eq)
+
+addSymbol :: Symbol -> GSymbolTable -> GSymbolTable
+addSymbol symb table = 
+    case elem symb table of
+        True -> error "Such symbol already in symbol table"
+        False -> table ++ [symb]
+
+removeSymbol :: String -> GSymbolTable -> GSymbolTable
+removeSymbol name table = filter (not . ((==) name) . symbName) table
+
+lookupSymbol :: String -> GSymbolTable -> Maybe Symbol
+lookupSymbol name table = find (((==) name) . symbName) table
+
+-- resolveSymbols :: Expression -> SymbolTable -> SymbolTable
+-- resolveSymbols FuncDef retType name args block = 
 
 data ExprType = TypeBool 
               | TypeInt 
@@ -110,6 +126,16 @@ prettyAst expr = map (joinN . prettyPrint) expr
 joinN = intercalate "\n"
 joinC = intercalate ","
 
+--typeEquals :: Expression -> Bool
+--typeEquals (ExprBinOp operand exprL exprR) =
+--    case (exprTypeCheck exprL == exprTypeCheck exprR) of
+--        True -> True
+--        False -> error "Bad types"
+
+--exprTypeCheck :: Expression -> ExprType
+--exprTypeCheck (VarRef name) = lookupSymbol  
+
+    
 
 ---- Simple expression interpreter
 --expression :: Expression -> Maybe Expression 
