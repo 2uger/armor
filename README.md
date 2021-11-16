@@ -1,8 +1,8 @@
-### Main parts of syntax analysis:
+### Main parts of Compiler:
   - Lexer (Lexer.hs)
   - Parser (Parser.hs)
-  -- Create concrete parse tree with nodes from ParseTree.hs
   - Abstract syntax tree (Ast.hs)
+  - CodeGen (CodeGen.hs)
   -- Define all AST node types(processing simple expression)
 ### Short overview of what to think about:
   - Lexical analyzer(simple tokens analyz)
@@ -29,7 +29,6 @@
     * Parse tree could be represented as production, AST not!!!
   - Ast
     * Creating AST node types from ADT in Haskell
-    * Think about pattern to be able to iterating through tree with different purposes
-
-### TODO:
-Actually build a language
+  - Syntax Analysis
+    * Actually just be aware that all types of expressions are compatible
+  - Code Generation
