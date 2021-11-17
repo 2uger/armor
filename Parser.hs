@@ -114,8 +114,7 @@ parseReturn = do
 
 parseMainFunc :: Parser Expression
 parseMainFunc = do
-    funcDef <- parseFunction
-    reservedOp ";"
+    funcDef <- parseExpr
     return funcDef
 
 parseSourceCode = parse parseMainFunc "<stdin>"

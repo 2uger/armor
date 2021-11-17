@@ -1,10 +1,13 @@
 module Main where
 
+import Data.List
+
 import System.IO
 import System.Environment
 
 import Parser
 import Ast
+import CodeGen
 
 main = do
     args <- getArgs
@@ -13,5 +16,5 @@ main = do
         [filename] -> do 
             line <- readFile filename
             case parseSourceCode line of
-                Right res -> putStrLn $ joinN $ prettyAst [res]
+                Right res -> putStrLn $ intercalate "\n" $ fst $ genCode res [] regTable
                 Left err -> print err

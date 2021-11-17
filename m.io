@@ -1,6 +1,6 @@
 int func (int m, int c) -> {
-    int cwreturn = 2 + 2 * 56;
     int m = 2;
+    int cw = m + 2 * 56;
     // Hello
     m++;
     if (m == 22){

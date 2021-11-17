@@ -18,10 +18,12 @@ import qualified Data.Map as Map
 --      int m = x * 45;
 --      return m;
 -- };
+intSize = 4
+
 type GSymbolTable = [Symbol] 
 
 data Symbol = Symbol { symbName :: String
-                     , symbType :: SymbolType
+                     , symbType :: ExprType
                      , size :: Int 
                      , memory :: Int }
                      deriving (Show, Eq)
@@ -40,8 +42,22 @@ removeSymbol name table = filter (not . ((==) name) . symbName) table
 lookupSymbol :: String -> GSymbolTable -> Maybe Symbol
 lookupSymbol name table = find (((==) name) . symbName) table
 
--- resolveSymbols :: Expression -> SymbolTable -> SymbolTable
--- resolveSymbols FuncDef retType name args block = 
+fillSymbolTable :: [Expression] -> GSymbolTable -> GSymbolTable
+fillSymbolTable (expr:xs) table = 
+    case expr of
+        VarDecl varType name -> addSymbol (Symbol name varType intSize 4097) table'
+        _ -> table
+  where
+    table' = fillSymbolTable xs table
+
+fillSymbolTable [expr] table =
+    case expr of
+        VarDecl varType name -> table ++ [Symbol name varType intSize 4096]
+        _ -> table
+
+fillSymbolTable [] table = table
+                                      
+                                      
 
 data ExprType = TypeBool 
               | TypeInt 
