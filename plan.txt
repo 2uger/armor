@@ -1,0 +1,1 @@
+1. Fill global symbol table

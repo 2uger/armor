@@ -3,6 +3,7 @@ module Ast where
 import Data.List
 import qualified Data.Map as Map
 
+
 -- Block structured language consists of three main constructions
 -- declaration(variable declaration, func declaration) 
 -- statement(statement is a process of somehow change programm state)
@@ -18,44 +19,32 @@ import qualified Data.Map as Map
 --      int m = x * 45;
 --      return m;
 -- };
-intSize = 4
+intSize = 4 :: Int
 
-type GSymbolTable = [Symbol] 
+    
 
-data Symbol = Symbol { symbName :: String
-                     , symbType :: ExprType
-                     , size :: Int 
-                     , memory :: Int }
-                     deriving (Show, Eq)
-
-data SymbolType = Var | Func deriving (Show, Eq)
-
-addSymbol :: Symbol -> GSymbolTable -> GSymbolTable
-addSymbol symb table = 
-    case elem symb table of
-        True -> error "Such symbol already in symbol table"
-        False -> table ++ [symb]
-
-removeSymbol :: String -> GSymbolTable -> GSymbolTable
-removeSymbol name table = filter (not . ((==) name) . symbName) table
-
-lookupSymbol :: String -> GSymbolTable -> Maybe Symbol
-lookupSymbol name table = find (((==) name) . symbName) table
-
-fillSymbolTable :: [Expression] -> GSymbolTable -> GSymbolTable
-fillSymbolTable (expr:xs) table = 
-    case expr of
-        VarDecl varType name -> addSymbol (Symbol name varType intSize 4097) table'
-        _ -> table
-  where
-    table' = fillSymbolTable xs table
-
-fillSymbolTable [expr] table =
-    case expr of
-        VarDecl varType name -> table ++ [Symbol name varType intSize 4096]
-        _ -> table
-
-fillSymbolTable [] table = table
+--removeSymbol :: String -> GSymbolTable -> GSymbolTable
+--removeSymbol name table = filter (not . ((==) name) . symbName) table
+--
+--lookupSymbol :: String -> GSymbolTable -> Maybe Symbol
+--lookupSymbol name table = find (((==) name) . symbName) table
+--
+--fillSymbolTable :: [Expression] -> GSymbolTable -> GSymbolTable
+--fillSymbolTable (expr:xs) table = 
+--    case expr of
+--        VarDecl varType name -> fillSymbolTable xs $ f (Symbol name varType 2 4097 ExprEmpty 0) table
+--        FuncDecl funcType name parms -> fillSymbolTable xs $ f (Symbol name funcType 0 0 parms 1) table
+--        _ -> table
+--  where
+--    f s t = addSymbol s t
+--
+--fillSymbolTable [expr] table =
+--    case expr of
+--        VarDecl varType name -> table ++ [Symbol name varType 2 4096 ExprEmpty 0]
+--        FuncDecl funcType name parms -> table ++ [Symbol name funcType 0 0 parms 1]
+--        _ -> table
+--
+--fillSymbolTable [] table = table
                                       
                                       
 
@@ -72,13 +61,13 @@ data BinaryOp = OpMultiply
               | OpMinus
               deriving(Show, Read, Eq)
 
-
 -- ****** Expression ******
 data Expression = ExprEmpty
                 -- Use variable that was declared earlier
                 | VarRef String 
                 | VarDef ExprType String Expression
                 | VarDecl ExprType String
+                | VarAssign String Expression
                 -- Hardcode constant
                 | ExprValueInt Integer 
                 | ExprValueChar Char
@@ -88,13 +77,15 @@ data Expression = ExprEmpty
                 | ExprDecrem Expression
 
                 | Block [Expression]
-                | FuncArgs [Expression]
+                | FuncParms [Expression]
                 | ExprBinOp BinaryOp Expression Expression
 
                 | FuncDef { retType :: ExprType 
                           , funcName :: String 
                           , funcArgs :: Expression 
                           , funcBlock :: Expression }
+                | FuncDecl ExprType String Expression
+                | FuncCall String [Expression]
                 | RetExpr Expression
                 | ExprIfElse Expression Expression Expression
                 | ExprStmt Expression Expression
@@ -117,7 +108,7 @@ instance PrettyExpr Expression where
                                           ++ ["} " ++ "ELSE" ++ " {"] 
                                           ++ (indentBlock $ prettyPrint exprElse) ++ ["}"]
 
-        FuncArgs args -> ["ARGS: " ++ (joinC $ map (unwords . prettyPrint) args)]
+        FuncParms args -> ["ARGS: " ++ (joinC $ map (unwords . prettyPrint) args)]
         RetExpr e -> ["RETURN "  ++ (unwords $ prettyPrint e)]
 
         Block e -> "BLOCK: {" : concat (map (indentBlock . prettyPrint) e)
@@ -141,17 +132,6 @@ prettyAst expr = map (joinN . prettyPrint) expr
 
 joinN = intercalate "\n"
 joinC = intercalate ","
-
---typeEquals :: Expression -> Bool
---typeEquals (ExprBinOp operand exprL exprR) =
---    case (exprTypeCheck exprL == exprTypeCheck exprR) of
---        True -> True
---        False -> error "Bad types"
-
---exprTypeCheck :: Expression -> ExprType
---exprTypeCheck (VarRef name) = lookupSymbol  
-
-    
 
 ---- Simple expression interpreter
 --expression :: Expression -> Maybe Expression 

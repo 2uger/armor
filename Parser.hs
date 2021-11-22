@@ -21,9 +21,13 @@ parseExpr = Ex.buildExpressionParser table factor
 factor :: Parser Expression
 factor = try parseInt 
      <|> try parseChar 
+     <|> try parseVarAssign
+     <|> try parseFunction
+     <|> try parseFuncCall
+     <|> try parseFuncDecl
      <|> try parseIncrem
-     <|> try parseDefine
-     <|> try parseDecl
+     <|> try parseVarDefine
+     <|> try parseVarDecl
      <|> try parseVar
      <|> try parseIfElse
      <|> try parseReturn
@@ -55,19 +59,26 @@ parseStmt = do
     exprR <- parseExpr
     return $ ExprStmt exprL exprR
 
-parseDecl :: Parser Expression
-parseDecl = do
+parseVarDecl :: Parser Expression
+parseVarDecl = do
     varType <- parseExprType
     varName <- identifier
     return $ VarDecl varType varName
 
-parseDefine :: Parser Expression
-parseDefine = do
+parseVarDefine :: Parser Expression
+parseVarDefine = do
     varType <- parseExprType
     varName <- identifier
     reserved "="
     value <- parseExpr
     return $ VarDef varType varName value
+
+parseVarAssign :: Parser Expression
+parseVarAssign = do
+    varName <- identifier
+    reserved "="
+    value <- parseExpr
+    return $ VarAssign varName value
 
 parseIfElse :: Parser Expression
 parseIfElse = do
@@ -101,10 +112,23 @@ parseFunction :: Parser Expression
 parseFunction = do
     retType <- parseExprType
     funcName <- identifier
-    args <- parens $ commaSep parseDecl
+    parms <- parens $ commaSep parseVarDecl
     reserved "->"
     exprBlock <- parseBlock
-    return $ FuncDef retType funcName (FuncArgs args) (Block exprBlock)
+    return $ FuncDef retType funcName (FuncParms parms) (Block exprBlock)
+
+parseFuncDecl :: Parser Expression
+parseFuncDecl = do
+    retType <- parseExprType
+    funcName <- identifier
+    parms <- parens $ commaSep parseVarDecl
+    return $ FuncDecl retType funcName (FuncParms parms)
+
+parseFuncCall :: Parser Expression
+parseFuncCall = do
+    funcName <- identifier
+    parms <- parens $ commaSep parseVar
+    return $ FuncCall funcName parms
 
 parseReturn :: Parser Expression
 parseReturn = do
@@ -114,7 +138,8 @@ parseReturn = do
 
 parseMainFunc :: Parser Expression
 parseMainFunc = do
-    funcDef <- parseExpr
-    return funcDef
+    expr <- parseExpr
+    reserved ";"
+    return expr
 
 parseSourceCode = parse parseMainFunc "<stdin>"

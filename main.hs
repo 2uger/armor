@@ -1,6 +1,7 @@
 module Main where
 
 import Data.List
+import Control.Monad.State
 
 import System.IO
 import System.Environment
@@ -16,5 +17,6 @@ main = do
         [filename] -> do 
             line <- readFile filename
             case parseSourceCode line of
-                Right res -> putStrLn $ intercalate "\n" $ fst $ genCode res [] regTable
+                Right res -> let ps = ProgrammState [] [1, 2, 3, 4, 5, 6] []
+                             in putStrLn $ show $ runState (genCode res) $ ps
                 Left err -> print err
