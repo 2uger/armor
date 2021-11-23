@@ -23,30 +23,6 @@ intSize = 4 :: Int
 
     
 
---removeSymbol :: String -> GSymbolTable -> GSymbolTable
---removeSymbol name table = filter (not . ((==) name) . symbName) table
---
---lookupSymbol :: String -> GSymbolTable -> Maybe Symbol
---lookupSymbol name table = find (((==) name) . symbName) table
---
---fillSymbolTable :: [Expression] -> GSymbolTable -> GSymbolTable
---fillSymbolTable (expr:xs) table = 
---    case expr of
---        VarDecl varType name -> fillSymbolTable xs $ f (Symbol name varType 2 4097 ExprEmpty 0) table
---        FuncDecl funcType name parms -> fillSymbolTable xs $ f (Symbol name funcType 0 0 parms 1) table
---        _ -> table
---  where
---    f s t = addSymbol s t
---
---fillSymbolTable [expr] table =
---    case expr of
---        VarDecl varType name -> table ++ [Symbol name varType 2 4096 ExprEmpty 0]
---        FuncDecl funcType name parms -> table ++ [Symbol name funcType 0 0 parms 1]
---        _ -> table
---
---fillSymbolTable [] table = table
-                                      
-                                      
 
 data ExprType = TypeBool 
               | TypeInt 

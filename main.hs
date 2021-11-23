@@ -9,6 +9,7 @@ import System.Environment
 import Parser
 import Ast
 import CodeGen
+import Symbols
 
 main = do
     args <- getArgs
@@ -17,6 +18,6 @@ main = do
         [filename] -> do 
             line <- readFile filename
             case parseSourceCode line of
-                Right res -> let ps = ProgrammState [] [1, 2, 3, 4, 5, 6] []
-                             in putStrLn $ show $ runState (genCode res) $ ps
+                Right res -> let (ps, r) = runState (fillSymbolTable res) $ (ProgrammState [] [1, 2, 3, 4, 5, 6] [])
+                             in putStrLn $ printProgrammState $ snd $ runState (codeGen res) $ r
                 Left err -> print err

@@ -136,8 +136,8 @@ parseReturn = do
     expr <- parseExpr
     return $ RetExpr expr
 
-parseMainFunc :: Parser Expression
-parseMainFunc = do
+parseMainFunc :: Parser [Expression]
+parseMainFunc = many $ do
     expr <- parseExpr
     reserved ";"
     return expr

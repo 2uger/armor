@@ -5,9 +5,7 @@ import Control.Monad.State
 import Data.List
 
 import Ast
-
-type Code = [String]
-type RegTable = [Int]
+import Symbols
 
 
 genCode :: Expression -> State ProgrammState ()
@@ -36,14 +34,26 @@ genCode x = error $ show x
 rregTable :: RegTable
 rregTable = [0, 1, 2, 3, 4, 5, 6]
 
-data ProgrammState = ProgrammState { code :: Code
-                                   , regTable :: RegTable
-                                   , symbolTable :: GSymbolTable }
-                                   deriving(Show, Eq)
+
+codeGen :: [Expression] -> State ProgrammState Int
+codeGen (expr:xs) = do
+    case expr of 
+        VarDef _ _ _  -> codeGenBinOp expr
+        _ -> codeGen xs
+
+codeGen [m] = do
+    error $ show m
+    return 2
 
 codeGenBinOp :: Expression -> State ProgrammState Int
 codeGenBinOp (VarDef exprType name expr) = do
-    codeGenBinOp expr
+    symbol <- lookupSymbol name
+    let symbolMemBinding = memBinding symbol
+    resReg <- codeGenBinOp expr
+    let cmd = "MOV " ++ "[" ++ show symbolMemBinding ++ "], R" ++ show resReg
+    state <- get
+    put $ state { code = code state ++ [cmd] }
+    return symbolMemBinding
 
 codeGenBinOp (ExprBinOp op exprL exprR) = do
     freeReg <- allocateReg
@@ -58,7 +68,9 @@ codeGenBinOp (ExprBinOp op exprL exprR) = do
 
 codeGenBinOp (VarRef name) = do
     freeReg <- allocateReg
-    let cmd = "MOV" ++ "R" ++ show freeReg ++ ", #" ++ name
+    symbol <- lookupSymbol name
+    let symbMemBinding = memBinding symbol
+    let cmd = "MOV " ++ "R" ++ show freeReg ++ ", [" ++ show symbMemBinding ++ "]"
     state <- get
     put $ state { code = (code state) ++ [cmd] }
     return freeReg
@@ -71,6 +83,10 @@ codeGenBinOp (ExprValueInt value) = do
     return $ freeReg
 
 codeGenBinOp x = error $ show x
+
+-- to show differen operands for the same mnemonics
+-- Reg 1, Memory 4096, Value 2
+data OperandType a = Reg a | Memory a | Value a
 
 genCmd :: BinaryOp -> Int -> Int -> Int -> String
 genCmd op r0 r1 r2
@@ -93,26 +109,3 @@ releaseReg reg = do
     state <- get
     let table = regTable state
     put $ state { regTable = insert reg table }
-
-type GSymbolTable = [GlobalSymbol]
-
-type LSymbolTable = [LocalSymbol]
-
-data GlobalSymbol = GlobalSymbol { symbName :: String
-                     , symbType :: ExprType
-                     , size :: Int
-                     , memBinding :: Int
-                     , parmList :: Expression
-                     -- address of starting code of function
-                     , fLabel :: Int }
-                     deriving (Show, Eq)
-
-data LocalSymbol = LocalSymbol String ExprType
-
-addSymbol :: GlobalSymbol -> State ProgrammState () 
-addSymbol symb = do
-    state <- get
-    let table = symbolTable state
-    case elem symb table of
-        True -> put $ state { symbolTable = table ++ [symb] }
-        False -> error "Same symbol exist" 
