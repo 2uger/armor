@@ -2,49 +2,48 @@ module Parser where
 
 import Text.Parsec
 import Text.Parsec.String (Parser)
-
 import qualified Text.Parsec.Expr as Ex
 
 import Ast
-import Lexer
+import qualified Lexer as Lx
 
-binary s f assoc = Ex.Infix (reservedOp s >> return (ExprBinOp f)) assoc
+binary s f assoc = Ex.Infix (Lx.reserved s >> return (ExprBinOp f)) assoc
 
 table = [[binary "*" OpMultiply Ex.AssocLeft,
           binary "/" OpDivide Ex.AssocLeft]
         ,[binary "+" OpPlus Ex.AssocLeft,
           binary "-" OpMinus Ex.AssocLeft]]
 
-parseExpr :: Parser Expression
-parseExpr = Ex.buildExpressionParser table factor
+exprP :: Parser Expression
+exprP = Ex.buildExpressionParser table factor
 
 factor :: Parser Expression
-factor = try parseInt 
-     <|> try parseChar 
-     <|> try parseVarAssign
-     <|> try parseFunction
-     <|> try parseFuncCall
-     <|> try parseFuncDecl
-     <|> try parseIncrem
-     <|> try parseVarDefine
-     <|> try parseVarDecl
-     <|> try parseVar
-     <|> try parseIfElse
-     <|> try parseReturn
-     <|> parens parseExpr
+factor = try intP 
+     <|> try charP 
+     <|> try varAssignP
+     <|> try funcP
+     <|> try funcCallP
+     <|> try funcDeclP
+     <|> try incremP
+     <|> try varDefineP
+     <|> try varDeclP
+     <|> try varP
+     <|> try ifElseP
+     <|> try returnP
+     <|> Lx.parens exprP
 
-parseInt :: Parser Expression
-parseInt = ExprValueInt <$> integer
+intP :: Parser Expression
+intP = ExprValueInt <$> Lx.integer
 
-parseChar :: Parser Expression
-parseChar = ExprValueChar <$> cchar
+charP :: Parser Expression
+charP = ExprValueChar <$> Lx.char
 
-parseVar :: Parser Expression
-parseVar = VarRef <$> identifier
+varP :: Parser Expression
+varP = VarRef <$> Lx.identifier
 
-parseExprType :: Parser ExprType
-parseExprType = do
-    exprType <- identifier
+exprTypeP :: Parser ExprType
+exprTypeP = do
+    exprType <- Lx.identifier
     case exprType of
         "int" -> return TypeInt
         "char" -> return TypeChar
@@ -52,94 +51,94 @@ parseExprType = do
         "void" -> return TypeVoid
         _      -> return TypeVoid
 
-parseStmt :: Parser Expression
-parseStmt = do
-    exprL <- parseExpr
-    reserved "=="
-    exprR <- parseExpr
+stmtP :: Parser Expression
+stmtP = do
+    exprL <- exprP
+    Lx.reserved "=="
+    exprR <- exprP
     return $ ExprStmt exprL exprR
 
-parseVarDecl :: Parser Expression
-parseVarDecl = do
-    varType <- parseExprType
-    varName <- identifier
+varDeclP :: Parser Expression
+varDeclP = do
+    varType <- exprTypeP
+    varName <- Lx.identifier
     return $ VarDecl varType varName
 
-parseVarDefine :: Parser Expression
-parseVarDefine = do
-    varType <- parseExprType
-    varName <- identifier
-    reserved "="
-    value <- parseExpr
+varDefineP :: Parser Expression
+varDefineP = do
+    varType <- exprTypeP
+    varName <- Lx.identifier
+    Lx.reserved "="
+    value <- exprP
     return $ VarDef varType varName value
 
-parseVarAssign :: Parser Expression
-parseVarAssign = do
-    varName <- identifier
-    reserved "="
-    value <- parseExpr
+varAssignP :: Parser Expression
+varAssignP = do
+    varName <- Lx.identifier
+    Lx.reserved "="
+    value <- exprP
     return $ VarAssign varName value
 
-parseIfElse :: Parser Expression
-parseIfElse = do
-    reserved "if"
-    cond <- parens parseStmt
-    ifBranch <- parseBlock
-    reserved "else"
-    elseBranch <- parseBlock
+ifElseP :: Parser Expression
+ifElseP = do
+    Lx.reserved "if"
+    cond <- Lx.parens stmtP
+    ifBranch <- blockP
+    Lx.reserved "else"
+    elseBranch <- blockP
 
     return $ ExprIfElse cond (Block ifBranch) (Block elseBranch)
 
-parseBlock :: Parser [Expression]
-parseBlock = braces $ many $
-    do exp <- parseExpr
-       reserved ";"
+blockP :: Parser [Expression]
+blockP = Lx.braces $ many $
+    do exp <- exprP
+       Lx.reserved ";"
        return exp
 
-parseIncrem :: Parser Expression
-parseIncrem = do
-    varIdent <- identifier
-    reservedOp "++"
+incremP :: Parser Expression
+incremP = do
+    varIdent <- Lx.identifier
+    Lx.reserved "++"
     return $ ExprIncrem $ VarRef varIdent
 
-parseDecrem :: Parser Expression
-parseDecrem = do
-    varIdent <- identifier
-    reservedOp "--"
+decremP :: Parser Expression
+decremP = do
+    varIdent <- Lx.identifier
+    Lx.reserved "--"
     return $ ExprDecrem $ VarRef varIdent
 
-parseFunction :: Parser Expression
-parseFunction = do
-    retType <- parseExprType
-    funcName <- identifier
-    parms <- parens $ commaSep parseVarDecl
-    reserved "->"
-    exprBlock <- parseBlock
+funcP :: Parser Expression
+funcP = do
+    retType <- exprTypeP
+    funcName <- Lx.identifier
+    parms <- Lx.parens $ Lx.commaSep varDeclP
+    Lx.reserved "->"
+    exprBlock <- blockP
     return $ FuncDef retType funcName (FuncParms parms) (Block exprBlock)
 
-parseFuncDecl :: Parser Expression
-parseFuncDecl = do
-    retType <- parseExprType
-    funcName <- identifier
-    parms <- parens $ commaSep parseVarDecl
+funcDeclP :: Parser Expression
+funcDeclP = do
+    retType <- exprTypeP
+    funcName <- Lx.identifier
+    parms <- Lx.parens $ Lx.commaSep varDeclP
     return $ FuncDecl retType funcName (FuncParms parms)
 
-parseFuncCall :: Parser Expression
-parseFuncCall = do
-    funcName <- identifier
-    parms <- parens $ commaSep parseVar
+funcCallP :: Parser Expression
+funcCallP = do
+    funcName <- Lx.identifier
+    parms <- Lx.parens $ Lx.commaSep varP
     return $ FuncCall funcName parms
 
-parseReturn :: Parser Expression
-parseReturn = do
-    reserved "return"
-    expr <- parseExpr
+returnP :: Parser Expression
+returnP = do
+    Lx.reserved "return"
+    expr <- exprP
     return $ RetExpr expr
 
-parseMainFunc :: Parser [Expression]
-parseMainFunc = many $ do
-    expr <- parseExpr
-    reserved ";"
+mainFuncP :: Parser [Expression]
+mainFuncP = many $ do
+    expr <- exprP
+    Lx.reserved ";"
     return expr
 
-parseSourceCode = parse parseMainFunc "<stdin>"
+sourceCodeP = parse mainFuncP "<stdin>"

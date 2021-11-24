@@ -17,7 +17,7 @@ main = do
         [] -> error "Provide file name"
         [filename] -> do 
             line <- readFile filename
-            case parseSourceCode line of
-                Right res -> let (ps, r) = runState (fillSymbolTable res) $ (ProgrammState [] [1, 2, 3, 4, 5, 6] [])
+            case sourceCodeP line of
+                Right res -> let (ps, r) = runState (fillSymbolTable res) $ (ProgrammState [] regTable [])
                              in putStrLn $ printProgrammState $ snd $ runState (codeGen res) $ r
                 Left err -> print err

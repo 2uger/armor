@@ -1,12 +1,14 @@
 module CodeGen where
 
 import Control.Monad.State
-
 import Data.List
 
 import Ast
 import Symbols
 
+-- default registers
+regTable :: RegTable
+regTable = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 genCode :: Expression -> State ProgrammState ()
 genCode (ExprIfElse stmt exprIf exprElse) = do
@@ -18,7 +20,7 @@ genCode (ExprStmt exprL exprR) = do
     let cmd = case (exprL, exprR) of
                   (VarRef nameL, VarRef nameR) -> stmtCmd nameL nameR
     state <- get
-    put $ state { code = (code state) ++ cmd }
+    put $ state { psCode = (psCode state) ++ cmd }
   where
     stmtCmd l r = ["MOV r0, " ++ l, "MOV r1, " ++ r, "CMP r0, r1"]
 
@@ -30,10 +32,6 @@ genCode (Block (expr:xs)) = do
 genCode x = error $ show x
 
 -- Code generation for Binary Operations
-
-rregTable :: RegTable
-rregTable = [0, 1, 2, 3, 4, 5, 6]
-
 
 codeGen :: [Expression] -> State ProgrammState Int
 codeGen (expr:xs) = do
@@ -48,12 +46,12 @@ codeGen [m] = do
 codeGenBinOp :: Expression -> State ProgrammState Int
 codeGenBinOp (VarDef exprType name expr) = do
     symbol <- lookupSymbol name
-    let symbolMemBinding = memBinding symbol
+    let symbolBinding = gsBinding symbol
     resReg <- codeGenBinOp expr
-    let cmd = "MOV " ++ "[" ++ show symbolMemBinding ++ "], R" ++ show resReg
+    let cmd = "MOV " ++ "[" ++ show symbolBinding ++ "], R" ++ show resReg
     state <- get
-    put $ state { code = code state ++ [cmd] }
-    return symbolMemBinding
+    put $ state { psCode = psCode state ++ [cmd] }
+    return symbolBinding
 
 codeGenBinOp (ExprBinOp op exprL exprR) = do
     freeReg <- allocateReg
@@ -63,23 +61,23 @@ codeGenBinOp (ExprBinOp op exprL exprR) = do
     releaseReg r1
     releaseReg r2
     state <- get
-    put $ state { code = code state ++ [cmd] }
+    put $ state { psCode = psCode state ++ [cmd] }
     return freeReg
 
 codeGenBinOp (VarRef name) = do
     freeReg <- allocateReg
     symbol <- lookupSymbol name
-    let symbMemBinding = memBinding symbol
-    let cmd = "MOV " ++ "R" ++ show freeReg ++ ", [" ++ show symbMemBinding ++ "]"
+    let symbolBinding = gsBinding symbol
+    let cmd = "MOV " ++ "R" ++ show freeReg ++ ", [" ++ show symbolBinding ++ "]"
     state <- get
-    put $ state { code = (code state) ++ [cmd] }
+    put $ state { psCode = (psCode state) ++ [cmd] }
     return freeReg
 
 codeGenBinOp (ExprValueInt value) = do
     freeReg <- allocateReg
     let cmd = "MOV " ++ "R" ++ show freeReg ++ ", #" ++ (show value)
     state <- get
-    put $ state { code = (code state) ++ [cmd] }
+    put $ state { psCode = (psCode state) ++ [cmd] }
     return $ freeReg
 
 codeGenBinOp x = error $ show x
@@ -100,12 +98,12 @@ genCmd op r0 r1 r2
 allocateReg :: State ProgrammState Int
 allocateReg = do
     state <- get
-    let freeReg = head $ regTable state
-    put state { regTable = drop 1 $ regTable state }
+    let freeReg = head $ psRT state
+    put state { psRT = drop 1 $ psRT state }
     return freeReg
 
 releaseReg :: Int -> State ProgrammState ()
 releaseReg reg = do
     state <- get
-    let table = regTable state
-    put $ state { regTable = insert reg table }
+    let table = psRT state
+    put $ state { psRT = insert reg table }

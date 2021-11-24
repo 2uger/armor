@@ -1,8 +1,6 @@
 module Ast where
 
 import Data.List
-import qualified Data.Map as Map
-
 
 -- Block structured language consists of three main constructions
 -- declaration(variable declaration, func declaration) 
@@ -19,11 +17,6 @@ import qualified Data.Map as Map
 --      int m = x * 45;
 --      return m;
 -- };
-intSize = 4 :: Int
-
-    
-
-
 data ExprType = TypeBool 
               | TypeInt 
               | TypeChar 
@@ -56,13 +49,11 @@ data Expression = ExprEmpty
                 | FuncParms [Expression]
                 | ExprBinOp BinaryOp Expression Expression
 
-                | FuncDef { retType :: ExprType 
-                          , funcName :: String 
-                          , funcArgs :: Expression 
-                          , funcBlock :: Expression }
+                | FuncDef ExprType String Expression Expression 
                 | FuncDecl ExprType String Expression
                 | FuncCall String [Expression]
                 | RetExpr Expression
+
                 | ExprIfElse Expression Expression Expression
                 | ExprStmt Expression Expression
                 deriving (Show, Read, Eq)
