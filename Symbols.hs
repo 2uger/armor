@@ -36,7 +36,7 @@ data GlobalSymbol = GlobalSymbol { gsName :: String
                                  , gsBinding :: Int
                                  , gsParms :: Expression
                                  -- address of starting code of function
-                                 , gsFlable :: Int }
+                                 , gsFlabel :: Int }
                                  deriving (Show, Eq)
 
 data LocalSymbol = LocalSymbol String ExprType

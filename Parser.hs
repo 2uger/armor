@@ -56,7 +56,7 @@ stmtP = do
     exprL <- exprP
     Lx.reserved "=="
     exprR <- exprP
-    return $ ExprStmt exprL exprR
+    return $ ExprStmt exprL "==" exprR
 
 varDeclP :: Parser Expression
 varDeclP = do

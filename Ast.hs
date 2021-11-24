@@ -55,7 +55,7 @@ data Expression = ExprEmpty
                 | RetExpr Expression
 
                 | ExprIfElse Expression Expression Expression
-                | ExprStmt Expression Expression
+                | ExprStmt Expression String Expression
                 deriving (Show, Read, Eq)
 
 class PrettyExpr a where

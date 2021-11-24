@@ -10,29 +10,8 @@ import Symbols
 regTable :: RegTable
 regTable = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-genCode :: Expression -> State ProgrammState ()
-genCode (ExprIfElse stmt exprIf exprElse) = do
-    genCode stmt
-    genCode exprIf
-    genCode exprElse
-
-genCode (ExprStmt exprL exprR) = do
-    let cmd = case (exprL, exprR) of
-                  (VarRef nameL, VarRef nameR) -> stmtCmd nameL nameR
-    state <- get
-    put $ state { psCode = (psCode state) ++ cmd }
-  where
-    stmtCmd l r = ["MOV r0, " ++ l, "MOV r1, " ++ r, "CMP r0, r1"]
-
-genCode (Block (expr:xs)) = do
-    codeGenBinOp expr
-    state <- get
-    put state
-
-genCode x = error $ show x
-
--- Code generation for Binary Operations
-
+-- main function that will delegate 
+-- others functions code generation depending on current expression
 codeGen :: [Expression] -> State ProgrammState Int
 codeGen (expr:xs) = do
     case expr of 
@@ -42,6 +21,31 @@ codeGen (expr:xs) = do
 codeGen [m] = do
     error $ show m
     return 2
+
+codeGenIfElse :: Expression -> State ProgrammState ()
+codeGenIfElse (ExprIfElse stmt exprIf exprElse) = do
+    codeGenIfElse stmt
+    codeGenIfElse exprIf
+    codeGenIfElse exprElse
+
+codeGenIfElse (ExprStmt exprL sign exprR) = do
+    let cmd = case (exprL, exprR) of
+                  (VarRef nameL, VarRef nameR) -> stmtCmd nameL nameR
+    state <- get
+    put $ state { psCode = (psCode state) ++ cmd }
+  where
+    stmtCmd l r = ["MOV r0, " ++ l, "MOV r1, " ++ r, "CMP r0, r1", "BEQ " ++ elseLabel]
+    elseLabel = "L0"
+
+codeGenIfElse (Block (expr:xs)) = do
+    codeGenBinOp expr
+    state <- get
+    put state
+
+codeGenIfElse x = error $ show x
+
+-- Code generation for Binary Operations
+
 
 codeGenBinOp :: Expression -> State ProgrammState Int
 codeGenBinOp (VarDef exprType name expr) = do
