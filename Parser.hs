@@ -126,7 +126,7 @@ funcDeclP = do
 funcCallP :: Parser Expression
 funcCallP = do
     funcName <- Lx.identifier
-    parms <- Lx.parens $ Lx.commaSep varP
+    parms <- Lx.parens $ Lx.commaSep exprP
     return $ FuncCall funcName parms
 
 returnP :: Parser Expression

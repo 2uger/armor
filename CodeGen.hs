@@ -22,6 +22,24 @@ codeGen [m] = do
     error $ show m
     return 2
 
+codeGenFuncCall :: [Expression] -> State ProgrammState ()
+codeGenFuncCall ((FuncCall fName (p:parms)):_) =
+    case p of
+        VarRef vName ->
+            do
+                state <- get
+                symbol <- lookupSymbol vName
+                let memBinding = gsBinding symbol 
+                let cmd = "PUSH " ++ "[" ++ show memBinding ++ "]"
+                put $ state { psCode = psCode state ++ [cmd] } 
+                codeGenFuncCall [FuncCall fName parms]
+        ExprValueInt value ->
+            do
+                state <- get
+                let cmd = "PUSH " ++ "#" ++ show value
+                put $ state { psCode = psCode state ++ [cmd] }
+                codeGenFuncCall [FuncCall fName parms]
+
 codeGenIfElse :: Expression -> State ProgrammState ()
 codeGenIfElse (ExprIfElse stmt exprIf exprElse) = do
     codeGenIfElse stmt

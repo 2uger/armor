@@ -12,7 +12,9 @@ data ProgrammState = ProgrammState { psCode :: Code
                                    -- table of registers
                                    , psRT :: RegTable
                                    -- table of global symbols
-                                   , psGST :: GSymbolTable }
+                                   , psGST :: GSymbolTable 
+                                   -- new local symbol table for every function
+                                   , psLST :: [LSymbolTable] }
                                    deriving(Show, Eq)
 
 printProgrammState :: ProgrammState -> String
@@ -39,7 +41,7 @@ data GlobalSymbol = GlobalSymbol { gsName :: String
                                  , gsFlabel :: Int }
                                  deriving (Show, Eq)
 
-data LocalSymbol = LocalSymbol String ExprType
+data LocalSymbol = LocalSymbol String ExprType deriving (Show, Eq)
 
 addSymbol :: GlobalSymbol -> State ProgrammState () 
 addSymbol symb = do
