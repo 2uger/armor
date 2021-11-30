@@ -49,7 +49,7 @@ addSymbol symb = do
     let table = psGST state
     case elem symb table of
         False -> put $ state { psGST = table ++ [symb] }
-        True -> error "Same symbol exist" 
+        True -> error $ "Symbol " ++ gsName symb ++ " already exists"
 
 removeSymbol :: String -> GSymbolTable -> GSymbolTable
 removeSymbol name table = filter (not . ((==) name) . gsName) table

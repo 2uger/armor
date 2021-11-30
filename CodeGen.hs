@@ -15,15 +15,21 @@ regTable = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 codeGen :: [Expression] -> State ProgrammState Int
 codeGen (expr:xs) = do
     case expr of 
-        VarDef _ _ _  -> codeGenBinOp expr
-        _ -> codeGen xs
+        ExprIfElse _ _ _ -> do
+            codeGenIfElse expr
+            codeGen xs
+        FuncCall _  _ -> do 
+            codeGenFuncCall expr 
+            codeGen xs
+        VarDef _ _ _  -> do 
+            codeGenBinOp expr
+            codeGen xs
+        x -> codeGen xs
 
-codeGen [m] = do
-    error $ show m
-    return 2
+codeGen [] = do return 0
 
-codeGenFuncCall :: [Expression] -> State ProgrammState ()
-codeGenFuncCall ((FuncCall fName (p:parms)):_) =
+codeGenFuncCall :: Expression -> State ProgrammState Int
+codeGenFuncCall (FuncCall fName (p:parms)) =
     case p of
         VarRef vName ->
             do
@@ -32,15 +38,19 @@ codeGenFuncCall ((FuncCall fName (p:parms)):_) =
                 let memBinding = gsBinding symbol 
                 let cmd = "PUSH " ++ "[" ++ show memBinding ++ "]"
                 put $ state { psCode = psCode state ++ [cmd] } 
-                codeGenFuncCall [FuncCall fName parms]
+                codeGenFuncCall $ FuncCall fName parms
         ExprValueInt value ->
             do
                 state <- get
                 let cmd = "PUSH " ++ "#" ++ show value
                 put $ state { psCode = psCode state ++ [cmd] }
-                codeGenFuncCall [FuncCall fName parms]
+                codeGenFuncCall $ FuncCall fName parms
+        sm -> error $ show sm
 
-codeGenIfElse :: Expression -> State ProgrammState ()
+codeGenFuncCall (FuncCall fName _) = do 
+    return 0 
+
+codeGenIfElse :: Expression -> State ProgrammState Int
 codeGenIfElse (ExprIfElse stmt exprIf exprElse) = do
     codeGenIfElse stmt
     codeGenIfElse exprIf
@@ -51,6 +61,7 @@ codeGenIfElse (ExprStmt exprL sign exprR) = do
                   (VarRef nameL, VarRef nameR) -> stmtCmd nameL nameR
     state <- get
     put $ state { psCode = (psCode state) ++ cmd }
+    return 0
   where
     stmtCmd l r = ["MOV r0, " ++ l, "MOV r1, " ++ r, "CMP r0, r1", "BEQ " ++ elseLabel]
     elseLabel = "L0"
@@ -59,14 +70,14 @@ codeGenIfElse (Block (expr:xs)) = do
     codeGenBinOp expr
     state <- get
     put state
+    return 0
 
-codeGenIfElse x = error $ show x
 
 -- Code generation for Binary Operations
 
 
 codeGenBinOp :: Expression -> State ProgrammState Int
-codeGenBinOp (VarDef exprType name expr) = do
+codeGenBinOp (VarAssign name expr) = do
     symbol <- lookupSymbol name
     let symbolBinding = gsBinding symbol
     resReg <- codeGenBinOp expr

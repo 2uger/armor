@@ -13,13 +13,22 @@ import Symbols
 
 main = do
     args <- getArgs
-    case args of
-        [] -> error "Provide file name"
-        [filename] -> do 
-            line <- readFile filename
-            case sourceCodeP line of
-                                            -- fill Global Symbol Table
-                Right res -> let (_, ps1) = runState (fillSymbolTable res) $ (ProgrammState [] regTable [] [])
-                                 (_, ps2) = runState (codeGenFuncCall res) $ ps1
-                             in putStrLn $ printProgrammState $ ps2
-                Left err -> print err
+    parse args
+
+parse :: [String] -> IO ()
+parse [filename, mode] = do
+        line <- readFile filename
+        case sourceCodeP line of
+            Right res -> 
+                let (_, ps1) = runState (fillSymbolTable res) $ (ProgrammState [] regTable [] [])
+                    (_, ps2) = runState (codeGen res) $ ps1
+                in case mode of
+                    "--ast" -> showAst line
+                    "--full-state" -> putStrLn $ printProgrammState $ ps2
+                    "--asm" -> putStrLn $ show $ psCode ps2
+            Left err -> print err
+
+showAst source = do 
+    case sourceCodeP source of
+     Right res -> putStrLn $ joinN $ map (joinN . prettyPrint) res
+
