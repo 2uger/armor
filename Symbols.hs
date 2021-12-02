@@ -14,7 +14,9 @@ data ProgrammState = ProgrammState { psCode :: Code
                                    -- table of global symbols
                                    , psGST :: GSymbolTable 
                                    -- new local symbol table for every function
-                                   , psLST :: [LSymbolTable] }
+                                   , psLST :: [LSymbolTable]
+                                   -- will show current label number
+                                   , psLabels :: Int}
                                    deriving(Show, Eq)
 
 printProgrammState :: ProgrammState -> String
@@ -22,8 +24,10 @@ printProgrammState ps = "Code: \n"
                         ++ (joinN $ map ("   " ++) $ psCode ps) ++ "\n"
                         ++ "Register table: \n"
                         ++ (show $ psRT ps)  ++ "\n"
-                        ++ "Symbol table: \n"
+                        ++ "Global Symbol table: \n"
                         ++ (joinN $ map show $ psGST ps)
+                        ++ "Local Symbol table: \n"
+                        ++ (joinN $ map show $ psLST ps)
   where
     joinN = intercalate "\n"
 
@@ -40,8 +44,11 @@ data GlobalSymbol = GlobalSymbol { gsName :: String
                                  -- address of starting code of function
                                  , gsFlabel :: Int }
                                  deriving (Show, Eq)
-
-data LocalSymbol = LocalSymbol String ExprType deriving (Show, Eq)
+-- LocalSymbol name type (BP offset)
+data LocalSymbol = LocalSymbol { lsName :: String
+                               , lsType :: ExprType
+                               , lsBpOff :: Int }
+                               deriving (Show, Eq)
 
 addSymbol :: GlobalSymbol -> State ProgrammState () 
 addSymbol symb = do
@@ -54,13 +61,19 @@ addSymbol symb = do
 removeSymbol :: String -> GSymbolTable -> GSymbolTable
 removeSymbol name table = filter (not . ((==) name) . gsName) table
 
-lookupSymbol :: String -> State ProgrammState GlobalSymbol
+lookupSymbol :: String -> State ProgrammState (Either GlobalSymbol LocalSymbol)
 lookupSymbol name = do
     state <- get
-    let table = psGST state
-    case find (((==) name) . gsName) table of
-        Just s -> return s
-        Nothing -> error "No such symbol in table"
+    let gTable = psGST state
+    let lTable = case length $ psLST state of
+                     0 -> []
+                     _ -> last $ psLST state
+        
+    case find (((==) name) . lsName) lTable of
+        Just s -> return $ Right s 
+        Nothing -> case find (((==) name) . gsName) gTable of
+            Just s -> return $ Left s
+            Nothing -> error "No such symbol in table"
 
 fillSymbolTable :: [Expression] -> State ProgrammState ()
 fillSymbolTable (expr:xs) = 
