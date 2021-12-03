@@ -16,7 +16,9 @@ data ProgrammState = ProgrammState { psCode :: Code
                                    -- new local symbol table for every function
                                    , psLST :: [LSymbolTable]
                                    -- will show current label number
-                                   , psLabels :: Int}
+                                   , psLabels :: Int
+                                   -- use for DATA segment to bind vars into memory
+                                   , psBind :: Int }
                                    deriving(Show, Eq)
 
 printProgrammState :: ProgrammState -> String
@@ -26,6 +28,7 @@ printProgrammState ps = "Code: \n"
                         ++ (show $ psRT ps)  ++ "\n"
                         ++ "Global Symbol table: \n"
                         ++ (joinN $ map show $ psGST ps)
+                        ++ "\n"
                         ++ "Local Symbol table: \n"
                         ++ (joinN $ map show $ psLST ps)
   where
@@ -58,9 +61,15 @@ addSymbol symb = do
         False -> put $ state { psGST = table ++ [symb] }
         True -> error $ "Symbol " ++ gsName symb ++ " already exists"
 
-removeSymbol :: String -> GSymbolTable -> GSymbolTable
-removeSymbol name table = filter (not . ((==) name) . gsName) table
+removeSymbol :: String -> State ProgrammState ()
+removeSymbol name = do
+    state <- get
+    let table = psGST state
+    let tableN = filter (not . ((==) name) . gsName) table
+    put $ state { psGST = tableN }
+    return ()
 
+-- lookup symbol by name first off all in local table, then in global one
 lookupSymbol :: String -> State ProgrammState (Either GlobalSymbol LocalSymbol)
 lookupSymbol name = do
     state <- get
@@ -75,11 +84,13 @@ lookupSymbol name = do
             Just s -> return $ Left s
             Nothing -> error "No such symbol in table"
 
+-- goes through whole programm and collect all global symbols
 fillSymbolTable :: [Expression] -> State ProgrammState ()
 fillSymbolTable (expr:xs) = 
     case expr of
         VarDecl varType name -> do
-            let symbol = GlobalSymbol name varType 2 4096 ExprEmpty 0
+            bind <- memBind
+            let symbol = GlobalSymbol name varType 2 bind ExprEmpty 0
             addSymbol symbol 
             fillSymbolTable xs
         FuncDecl funcType name parms -> do
@@ -88,6 +99,34 @@ fillSymbolTable (expr:xs) =
             fillSymbolTable xs
         _ -> do
             fillSymbolTable xs
+  where
+    -- return current free location in DATA segment
+    memBind :: State ProgrammState Int
+    memBind = do
+        state <- get
+        let bind = psBind state
+        put $ state { psBind = bind + 1 }
+        return bind
 
 fillSymbolTable [] = do
     return ()
+
+-- remove current scope of local symbol table
+cleanLocalTable :: State ProgrammState ()
+cleanLocalTable = do
+    state <- get
+    let newLST = case length $ psLST state of
+                     0 -> []
+                     _ -> init $ psLST state
+    put $ state { psLST = newLST }
+
+-- create local symbol table for current scope function
+fillLocalTable :: [Expression] -> LSymbolTable -> Int -> State ProgrammState Int
+fillLocalTable ((VarDecl varType varName):xs) table offset = do
+    fillLocalTable xs (table ++ [LocalSymbol varName varType offset]) (offset+1)
+
+fillLocalTable [] table _ = do
+    state <- get
+    put $ state { psLST = psLST state ++ [table] }
+    return 0
+

@@ -20,7 +20,7 @@ parse [filename, mode] = do
         line <- readFile filename
         case sourceCodeP line of
             Right res -> 
-                let (_, ps1) = runState (fillSymbolTable res) $ (ProgrammState [] regTable [] [] 0)
+                let (_, ps1) = runState (fillSymbolTable res) $ (ProgrammState [] regTable [] [] 0 4096)
                     (_, ps2) = runState (codeGen res) $ ps1
                 in case mode of
                     "--ast" -> showAst line

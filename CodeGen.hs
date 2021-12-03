@@ -38,8 +38,11 @@ codeGenFuncCall (FuncCall fName (p:parms)) =
             do
                 state <- get
                 symbol <- lookupSymbol vName
-                let memBinding = 4--gsBinding symbol 
-                let cmd = "PUSH " ++ "[" ++ show memBinding ++ "]"
+                let mem = case symbol of
+                              Left gSymb -> show $ gsBinding gSymb
+
+                              Right lSymb -> "BP-" ++ (show $ lsBpOff lSymb)
+                let cmd = "PUSH " ++ "[" ++ mem ++ "]"
                 put $ state { psCode = psCode state ++ [cmd] } 
                 codeGenFuncCall $ FuncCall fName parms
         ExprValueInt value ->
@@ -51,30 +54,25 @@ codeGenFuncCall (FuncCall fName (p:parms)) =
         sm -> error $ show sm
 
 codeGenFuncCall (FuncCall fName _) = do 
-    let cmd = "BL"
+    let cmds = ["SUB SP 2", "BL " ++ fName, "\n"]
+    state <- get
+    put $ state { psCode = psCode state ++ cmds }
     return 0 
 
+-- [BP-2] - return value
+-- [BP-3] - arg-1
+-- [BP-4] - arg-2...
+-- [BP+1] - loc_1
+-- [BP+2] - loc_2
 codeGenFunc (FuncDef fType fName (FuncParms parms) (Block expr)) = do
-    -- [BP-2] - return value
-    -- [BP-3] - arg-1
-    -- [BP-4] - arg-2...
-    -- [BP+1] - loc_1
-    -- [BP+2] - loc_2
     fillLocalTable parms [] (length parms + 1) 
+    let label = fName ++ ":"
     let pushBP = "PUSH BP"
     let newBP = "MOV BP, SP"
     state <- get
-    put $ state { psCode = psCode state ++ [pushBP, newBP] }
+    put $ state { psCode = psCode state ++ [label, pushBP, newBP] } 
     codeGen expr
-    return 0
-
-fillLocalTable :: [Expression] -> LSymbolTable -> Int -> State ProgrammState Int
-fillLocalTable ((VarDecl varType varName):xs) table offset = do
-    fillLocalTable xs (table ++ [LocalSymbol varName varType offset]) (offset+1)
-
-fillLocalTable [] table _ = do
-    state <- get
-    put $ state { psLST = psLST state ++ [table] }
+    cleanLocalTable
     return 0
 
 codeGenIfElse :: Expression -> State ProgrammState Int
