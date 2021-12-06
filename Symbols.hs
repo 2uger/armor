@@ -24,15 +24,11 @@ data ProgrammState = ProgrammState { psCode :: Code
 printProgrammState :: ProgrammState -> String
 printProgrammState ps = "Code: \n" 
                         ++ (joinN $ map ("   " ++) $ psCode ps) ++ "\n"
-                        ++ "Register table: \n"
-                        ++ (show $ psRT ps)  ++ "\n"
-                        ++ "Global Symbol table: \n"
+                        ++ "GLOBAL SYMBOL TABLE: \n"
                         ++ (joinN $ map show $ psGST ps)
                         ++ "\n"
-                        ++ "Local Symbol table: \n"
+                        ++ "LOCAL SYMBOL TABLE: \n"
                         ++ (joinN $ map show $ psLST ps)
-  where
-    joinN = intercalate "\n"
 
 type GSymbolTable = [GlobalSymbol]
 
@@ -46,7 +42,17 @@ data GlobalSymbol = GlobalSymbol { gsName :: String
                                  , gsParms :: Expression
                                  -- address of starting code of function
                                  , gsFlabel :: Int }
-                                 deriving (Show, Eq)
+                                 deriving (Eq)
+
+instance Show GlobalSymbol where
+    show (GlobalSymbol n t s b ps lb) =
+        "Name: " ++ n ++ "\n"
+        ++ "Type: " ++ show t ++ "\n"
+        ++ "Size: " ++ show s ++ "\n"
+        ++ "Binding: " ++ show b ++ "\n"
+        ++ "Parms: " ++ show ps ++ "\n"
+        ++ "Label: " ++ show lb ++ "\n"
+
 -- LocalSymbol name type (BP offset)
 data LocalSymbol = LocalSymbol { lsName :: String
                                , lsType :: ExprType
@@ -89,8 +95,9 @@ fillSymbolTable :: [Expression] -> State ProgrammState ()
 fillSymbolTable (expr:xs) = 
     case expr of
         VarDecl varType name -> do
-            bind <- memBind
-            let symbol = GlobalSymbol name varType 2 bind ExprEmpty 0
+            let offset = memOffset varType
+            bind <- memBind offset
+            let symbol = GlobalSymbol name varType offset bind ExprEmpty 0
             addSymbol symbol 
             fillSymbolTable xs
         FuncDecl funcType name parms -> do
@@ -101,12 +108,18 @@ fillSymbolTable (expr:xs) =
             fillSymbolTable xs
   where
     -- return current free location in DATA segment
-    memBind :: State ProgrammState Int
-    memBind = do
+    memBind :: Int -> State ProgrammState Int
+    memBind offset = do
         state <- get
         let bind = psBind state
-        put $ state { psBind = bind + 1 }
+        put $ state { psBind = bind + offset }
         return bind
+
+    -- return memory offset depending on Type
+    memOffset :: ExprType -> Int
+    memOffset t = case t of
+                      TypeInt -> 2
+                      TypeChar -> 1
 
 fillSymbolTable [] = do
     return ()

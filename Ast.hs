@@ -70,15 +70,18 @@ instance PrettyExpr Expression where
 
         FuncDef ret name args block -> [unwords ["FUNCTION: ", show ret, show name], unwords $ prettyPrint args] 
                                        ++  prettyPrint block
-        ExprIfElse stm exprIf exprElse -> ["IF ("] ++ prettyPrint stm ++ [") {"] 
+        ExprIfElse stm exprIf exprElse -> ["IF ("] 
+                                          ++ prettyPrint stm
+                                          ++ [") {"] 
                                           ++ (indentBlock $ prettyPrint exprIf) 
                                           ++ ["} " ++ "ELSE" ++ " {"] 
-                                          ++ (indentBlock $ prettyPrint exprElse) ++ ["}"]
+                                          ++ (indentBlock $ prettyPrint exprElse) 
+                                          ++ ["}"]
 
         FuncParms args -> ["ARGS: " ++ (joinC $ map (unwords . prettyPrint) args)]
         RetExpr e -> ["RETURN "  ++ (unwords $ prettyPrint e)]
 
-        Block e -> "BLOCK: {" : concat (map (indentBlock . prettyPrint) e)
+        Block e -> "{" : concat (map (indentBlock . prettyPrint) e) ++ ["}"]
 
         ExprValueInt val -> [show val]
         ExprValueChar val -> [show val]

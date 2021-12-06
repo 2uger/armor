@@ -3,8 +3,7 @@ int fjskl;
 int c;
 int f (int m, int t) ->  {
     c = 2 * t + m;
-    return c;
-    f(m, t);
+    return 2 * 2;
 };
 
 void main(int k) -> {

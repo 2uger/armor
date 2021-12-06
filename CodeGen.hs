@@ -27,6 +27,9 @@ codeGen (expr:xs) = do
         FuncDef _ _ _ _ -> do
             codeGenFunc expr
             codeGen xs
+        RetExpr _ -> do
+            codeGenReturn expr
+            codeGen xs
         x -> codeGen xs
 
 codeGen [] = do return 0
@@ -40,7 +43,6 @@ codeGenFuncCall (FuncCall fName (p:parms)) =
                 symbol <- lookupSymbol vName
                 let mem = case symbol of
                               Left gSymb -> show $ gsBinding gSymb
-
                               Right lSymb -> "BP-" ++ (show $ lsBpOff lSymb)
                 let cmd = "PUSH " ++ "[" ++ mem ++ "]"
                 put $ state { psCode = psCode state ++ [cmd] } 
@@ -55,15 +57,16 @@ codeGenFuncCall (FuncCall fName (p:parms)) =
 
 codeGenFuncCall (FuncCall fName _) = do 
     let cmds = ["SUB SP 2", "BL " ++ fName, "\n"]
-    state <- get
-    put $ state { psCode = psCode state ++ cmds }
+    updateCode cmds
     return 0 
 
--- [BP-2] - return value
--- [BP-3] - arg-1
--- [BP-4] - arg-2...
--- [BP+1] - loc_1
--- [BP+2] - loc_2
+-- arg-1
+-- arg-2...
+-- return value
+-- return address (CPU push that value itself, after function call another function)
+-- old BP
+-- loc_1 (new BP point there)
+-- loc_2
 codeGenFunc (FuncDef fType fName (FuncParms parms) (Block expr)) = do
     fillLocalTable parms [] (length parms + 1) 
     let label = fName ++ ":"
@@ -72,8 +75,45 @@ codeGenFunc (FuncDef fType fName (FuncParms parms) (Block expr)) = do
     state <- get
     put $ state { psCode = psCode state ++ [label, pushBP, newBP] } 
     codeGen expr
-    cleanLocalTable
+    --cleanLocalTable
     return 0
+
+codeGenReturn :: Expression -> State ProgrammState Int
+codeGenReturn (RetExpr e) = do
+    resReg <- codeGenReturn e
+    let cmds = ["MOV " ++ "[BP-6] " ++ "R" ++ show resReg,
+                "LDR " ++ "LR " ++ "[BP-4]",
+                "RET "]
+    state <- get
+    put $ state { psCode = psCode state ++ cmds }
+    return 0
+
+-- return register where final value is located
+codeGenReturn (VarRef name) = do
+    symbol <- lookupSymbol name 
+    case symbol of
+        Left gSym -> do
+            let symBind = gsBinding gSym
+            freeReg <- allocateReg
+            let cmd = ["LDR " ++ "R" ++ show freeReg ++ " [" ++ show symBind ++ "]"]
+            updateCode cmd
+            return freeReg
+        Right lSym -> do
+            let bpOffset = lsBpOff lSym
+            freeReg <- allocateReg
+            let cmd = ["LDR " ++ "R" ++ show freeReg ++ " [BP-" ++ show bpOffset ++ "]"]
+            updateCode cmd
+            return freeReg
+
+codeGenReturn (ExprBinOp op le re) = do
+    resReg <- codeGenBinOp $ ExprBinOp op le re
+    return resReg
+
+updateCode :: [String] -> State ProgrammState ()
+updateCode code = do
+    state <- get
+    put $ state { psCode = psCode state ++ code }
+    return ()
 
 codeGenIfElse :: Expression -> State ProgrammState Int
 codeGenIfElse (ExprIfElse stmt exprIf exprElse) = do
@@ -101,8 +141,6 @@ codeGenIfElse (Block (expr:xs)) = do
 
 
 -- Code generation for Binary Operations
-
-
 codeGenBinOp :: Expression -> State ProgrammState Int
 codeGenBinOp (VarAssign name expr) = do
     symbol <- lookupSymbol name
@@ -110,9 +148,8 @@ codeGenBinOp (VarAssign name expr) = do
         Left gSym -> do
             let symbolBinding = gsBinding gSym
             resReg <- codeGenBinOp expr
-            let cmd = "MOV " ++ "[" ++ show symbolBinding ++ "], R" ++ show resReg
-            state <- get
-            put $ state { psCode = psCode state ++ [cmd] }
+            let cmd = ["MOV " ++ "[" ++ show symbolBinding ++ "], R" ++ show resReg]
+            updateCode cmd
             return symbolBinding
         Right lSym -> error "Can change only global vars for now"
 
@@ -129,33 +166,26 @@ codeGenBinOp (ExprBinOp op exprL exprR) = do
 
 codeGenBinOp (VarRef name) = do
     freeReg <- allocateReg
-    state <- get
     symbol <- lookupSymbol name
     case symbol of
         Left gSym -> do
             let binding = gsBinding gSym
-            let cmd = "MOV " ++ "R" ++ show freeReg ++ ", [" ++ show binding ++ "]"
-            put $ state { psCode = (psCode state) ++ [cmd] }
+            let cmd = ["MOV " ++ "R" ++ show freeReg ++ ", [" ++ show binding ++ "]"]
+            updateCode cmd
             return freeReg
         Right lSym -> do
             let off = lsBpOff lSym
-            let cmd = "LDR R" ++ show freeReg ++ ", [BP-" ++ show off ++ "]"
-            put $ state { psCode = (psCode state) ++ [cmd] }
+            let cmd = ["LDR R" ++ show freeReg ++ ", [BP-" ++ show off ++ "]"]
+            updateCode cmd
             return freeReg
-
 
 codeGenBinOp (ExprValueInt value) = do
     freeReg <- allocateReg
-    let cmd = "MOV " ++ "R" ++ show freeReg ++ ", #" ++ (show value)
-    state <- get
-    put $ state { psCode = (psCode state) ++ [cmd] }
+    let cmd = ["MOV " ++ "R" ++ show freeReg ++ ", #" ++ (show value)]
+    updateCode cmd
     return $ freeReg
 
 codeGenBinOp x = error $ show x
-
--- to show differen operands for the same mnemonics
--- Reg 1, Memory 4096, Value 2
-data OperandType a = Reg a | Memory a | Value a
 
 genCmd :: BinaryOp -> Int -> Int -> Int -> String
 genCmd op r0 r1 r2
