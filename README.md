@@ -1,9 +1,31 @@
-### Main parts of Compiler:
-  - Lexer (Lexer.hs)
-  - Parser (Parser.hs)
-  - Abstract syntax tree (Ast.hs)
-  - CodeGen (CodeGen.hs)
-  -- Define all AST node types(processing simple expression)
+#### Compiler
+Home made simple compiler written in Haskell and include all main parts:
+* Lexer
+* Parser
+* Syntax and Semantic analysis
+* Ast processing and ASM output
+
+Simple programm looks like:
+```sh
+int r;
+int c;
+int f (int m, int t) ->  {
+    if (m == t) {
+        c = 2 * t + m;
+    } else {
+        c = 1;
+    };
+    return c;
+};
+int main(int k) -> {
+    c = f(2, k);
+    return c;
+}
+```
+
+Main idea is to create basic, but fundamentals components of compiler.
+Written fully on Haskell for practicing purposes.
+
 ### Short overview of what to think about:
   - Lexical analyzer(simple tokens analyz)
     * Regular expression and FSM
@@ -27,8 +49,3 @@
           such parser in Haskell.
     * AST vs parse tree(concrete)
     * Parse tree could be represented as production, AST not!!!
-  - Ast
-    * Creating AST node types from ADT in Haskell
-  - Syntax Analysis
-    * Actually just be aware that all types of expressions are compatible
-  - Code Generation

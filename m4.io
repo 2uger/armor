@@ -1,12 +1,15 @@
 int r;
-int fjskl;
 int c;
 int f (int m, int t) ->  {
-    c = 2 * t + m;
-    return 2 * 2;
+    if (m == t) {
+        c = 2 * t + m;
+    } else {
+        c = 1;
+    };
+    return c;
 };
 
-void main(int k) -> {
+int main(int k) -> {
     c = f(2, k);
-
+    return c;
 };
