@@ -5,6 +5,7 @@ import Data.List
 
 import Ast
 import Symbols
+import Utils
 
 -- default registers
 regTable :: RegTable
@@ -56,9 +57,12 @@ codeGenFuncCall (FuncCall fName (p:parms)) =
         sm -> error $ show sm
 
 codeGenFuncCall (FuncCall fName _) = do 
-    let cmds = ["SUB SP 2", "BL " ++ fName, "\n"]
+    freeReg <- allocateReg
+    let cmds = ["SUB SP 2", 
+                "BL " ++ fName, 
+                "POP " ++ "R" ++ show freeReg]
     updateCode cmds
-    return 0 
+    return freeReg 
 
 -- arg-1
 -- arg-2...
@@ -68,24 +72,24 @@ codeGenFuncCall (FuncCall fName _) = do
 -- loc_1 (new BP point there)
 -- loc_2
 codeGenFunc (FuncDef fType fName (FuncParms parms) (Block expr)) = do
-    fillLocalTable parms [] (length parms + 1) 
-    let label = fName ++ ":"
-    let pushBP = "PUSH BP"
-    let newBP = "MOV BP, SP"
-    state <- get
-    put $ state { psCode = psCode state ++ [label, pushBP, newBP] } 
+    -- BP offset depending on how much parms function should consume
+    -- and const value of RetValue space, RetAddress, OldBP
+    fillLocalTable parms [] ((length parms) * 2 + 6) 
+    let label = "\n" ++ fName ++ ":"
+    let cmd = ["PUSH BP", "MOV BP, SP"]
+    updateCode $ label : cmd
     codeGen expr
-    --cleanLocalTable
+    cleanLocalTable
     return 0
 
 codeGenReturn :: Expression -> State ProgrammState Int
 codeGenReturn (RetExpr e) = do
     resReg <- codeGenReturn e
     let cmds = ["MOV " ++ "[BP-6] " ++ "R" ++ show resReg,
-                "LDR " ++ "LR " ++ "[BP-4]",
+                "POP {BP, LR}",
                 "RET "]
     state <- get
-    put $ state { psCode = psCode state ++ cmds }
+    put $ state { psCode = psCode state ++ cmds } 
     return 0
 
 -- return register where final value is located
@@ -108,12 +112,6 @@ codeGenReturn (VarRef name) = do
 codeGenReturn (ExprBinOp op le re) = do
     resReg <- codeGenBinOp $ ExprBinOp op le re
     return resReg
-
-updateCode :: [String] -> State ProgrammState ()
-updateCode code = do
-    state <- get
-    put $ state { psCode = psCode state ++ code }
-    return ()
 
 codeGenIfElse :: Expression -> State ProgrammState Int
 codeGenIfElse (ExprIfElse stmt exprIf exprElse) = do
@@ -185,26 +183,7 @@ codeGenBinOp (ExprValueInt value) = do
     updateCode cmd
     return $ freeReg
 
+codeGenBinOp (FuncCall name e) = do
+    codeGenFuncCall $ FuncCall name e
+
 codeGenBinOp x = error $ show x
-
-genCmd :: BinaryOp -> Int -> Int -> Int -> String
-genCmd op r0 r1 r2
-    | op == OpMultiply = "MUL " ++ regTmpl
-    | op == OpDivide = "DIV " ++ regTmpl
-    | op == OpPlus = "ADD " ++ regTmpl
-    | op == OpMinus = "SUB " ++ regTmpl
-  where
-    regTmpl = "R" ++ show r0 ++ ", " ++ "R" ++ show r1 ++ ", " ++ "R" ++ show r2
-
-allocateReg :: State ProgrammState Int
-allocateReg = do
-    state <- get
-    let freeReg = head $ psRT state
-    put state { psRT = drop 1 $ psRT state }
-    return freeReg
-
-releaseReg :: Int -> State ProgrammState ()
-releaseReg reg = do
-    state <- get
-    let table = psRT state
-    put $ state { psRT = insert reg table }

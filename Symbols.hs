@@ -136,7 +136,7 @@ cleanLocalTable = do
 -- create local symbol table for current scope function
 fillLocalTable :: [Expression] -> LSymbolTable -> Int -> State ProgrammState Int
 fillLocalTable ((VarDecl varType varName):xs) table offset = do
-    fillLocalTable xs (table ++ [LocalSymbol varName varType offset]) (offset+1)
+    fillLocalTable xs (table ++ [LocalSymbol varName varType offset]) (offset-2)
 
 fillLocalTable [] table _ = do
     state <- get

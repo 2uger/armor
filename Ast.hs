@@ -28,7 +28,13 @@ data BinaryOp = OpMultiply
               | OpDivide
               | OpPlus
               | OpMinus
-              deriving(Show, Read, Eq)
+              deriving(Read, Eq)
+
+instance Show BinaryOp where
+    show OpMultiply = "*"
+    show OpDivide = "/"
+    show OpPlus = "+"
+    show OpMinus = "-"
 
 -- ****** Expression ******
 data Expression = ExprEmpty
@@ -67,8 +73,10 @@ instance PrettyExpr Expression where
     prettyPrint expr = case expr of
         VarRef ref -> [unwords ["Var", ref]]
         VarDef t n expr -> [unwords [show t, n, "=", unwords $ prettyPrint expr]]
+        VarDecl t name -> [show t ++ " " ++ name ++ ";"]
+        VarAssign name expr -> [name ++ " = " ++ (unwords $ prettyPrint expr)] 
 
-        FuncDef ret name args block -> [unwords ["FUNCTION: ", show ret, show name], unwords $ prettyPrint args] 
+        FuncDef ret name args block -> [unwords ["Func: ", show ret, show name], "  " ++ (unwords $ prettyPrint args)] 
                                        ++  prettyPrint block
         ExprIfElse stm exprIf exprElse -> ["IF ("] 
                                           ++ prettyPrint stm
@@ -78,8 +86,8 @@ instance PrettyExpr Expression where
                                           ++ (indentBlock $ prettyPrint exprElse) 
                                           ++ ["}"]
 
-        FuncParms args -> ["ARGS: " ++ (joinC $ map (unwords . prettyPrint) args)]
-        RetExpr e -> ["RETURN "  ++ (unwords $ prettyPrint e)]
+        FuncParms args -> ["Args: " ++ (joinC $ map (unwords . prettyPrint) args)]
+        RetExpr e -> ["Return "  ++ (unwords $ prettyPrint e)]
 
         Block e -> "{" : concat (map (indentBlock . prettyPrint) e) ++ ["}"]
 
@@ -88,9 +96,9 @@ instance PrettyExpr Expression where
         ExprValueBool val -> [show val]
 
         ExprBinOp op exprL exprR -> [(unwords $ prettyPrint exprL) 
-                                     ++ "  " 
+                                     ++ " " 
                                      ++ (show op) 
-                                     ++ "  " 
+                                     ++ " " 
                                      ++ (unwords $ prettyPrint exprR)]
         ExprIncrem e -> [(unwords $ prettyPrint e) ++ "++"]
         ExprDecrem e -> [(unwords $ prettyPrint e) ++ "--"]
