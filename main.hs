@@ -25,7 +25,7 @@ parse [filename, mode] = do
                 in case mode of
                     "--ast" -> showAst line
                     "--full-state" -> putStrLn $ printProgrammState $ ps2
-                    "--asm" -> putStrLn $ show $ psCode ps2
+                    "--asm" -> putStrLn $ unwords $ map ("\n" ++) (psCode ps2)
             Left err -> print err
 
 parse [x] = do

@@ -88,7 +88,7 @@ lookupSymbol name = do
         Just s -> return $ Right s 
         Nothing -> case find (((==) name) . gsName) gTable of
             Just s -> return $ Left s
-            Nothing -> error "No such symbol in table"
+            Nothing -> error $ "No such symbol in table: " ++ name
 
 -- goes through whole programm and collect all global symbols
 fillSymbolTable :: [Expression] -> State ProgrammState ()
@@ -142,4 +142,3 @@ fillLocalTable [] table _ = do
     state <- get
     put $ state { psLST = psLST state ++ [table] }
     return 0
-

@@ -21,8 +21,13 @@ data ExprType = TypeBool
               | TypeInt 
               | TypeChar 
               | TypeVoid
-              | TypeFunction ExprType ExprType
-              deriving(Show, Read, Eq)
+              deriving(Read, Eq)
+
+instance Show ExprType where
+    show TypeBool = "bool"
+    show TypeInt = "int"
+    show TypeChar = "char"
+    show TypeVoid = "void"
 
 data BinaryOp = OpMultiply
               | OpDivide
@@ -71,25 +76,24 @@ class PrettyExpr a where
 -- ["exp1", "exp2"] so we can add indent into certain elements
 instance PrettyExpr Expression where
     prettyPrint expr = case expr of
-        VarRef ref -> [unwords ["Var", ref]]
+        VarRef ref -> [ref]
         VarDef t n expr -> [unwords [show t, n, "=", unwords $ prettyPrint expr]]
-        VarDecl t name -> [show t ++ " " ++ name ++ ";"]
+        VarDecl t name -> [show t ++ " " ++ name]
         VarAssign name expr -> [name ++ " = " ++ (unwords $ prettyPrint expr)] 
 
-        FuncDef ret name args block -> [unwords ["Func: ", show ret, show name], "  " ++ (unwords $ prettyPrint args)] 
-                                       ++  prettyPrint block
-        ExprIfElse stm exprIf exprElse -> ["IF ("] 
-                                          ++ prettyPrint stm
-                                          ++ [") {"] 
+        FuncDef ret name args block -> [unwords ["Func: ", show ret, show name], 
+                                        (unwords $ prettyPrint args) ++ " {"] 
+                                       ++  prettyPrint block ++ ["}"]
+        ExprIfElse stm exprIf exprElse -> ["if (" ++ (unwords $ prettyPrint stm) ++ ") {"]
                                           ++ (indentBlock $ prettyPrint exprIf) 
-                                          ++ ["} " ++ "ELSE" ++ " {"] 
+                                          ++ ["} " ++ "else" ++ " {"] 
                                           ++ (indentBlock $ prettyPrint exprElse) 
                                           ++ ["}"]
 
         FuncParms args -> ["Args: " ++ (joinC $ map (unwords . prettyPrint) args)]
         RetExpr e -> ["Return "  ++ (unwords $ prettyPrint e)]
 
-        Block e -> "{" : concat (map (indentBlock . prettyPrint) e) ++ ["}"]
+        Block e -> concat (map (indentBlock . prettyPrint) e)
 
         ExprValueInt val -> [show val]
         ExprValueChar val -> [show val]
@@ -102,6 +106,7 @@ instance PrettyExpr Expression where
                                      ++ (unwords $ prettyPrint exprR)]
         ExprIncrem e -> [(unwords $ prettyPrint e) ++ "++"]
         ExprDecrem e -> [(unwords $ prettyPrint e) ++ "--"]
+        ExprStmt eL sign eR -> [(unwords $ prettyPrint eL) ++ " " ++ sign ++ " " ++ (unwords $ prettyPrint eR)]
         _                -> ["Nothing"]
 
 indentBlock = map("  " ++)
