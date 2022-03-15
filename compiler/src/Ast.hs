@@ -1,8 +1,6 @@
 module Ast where
 
 import Data.List
-import qualified Data.Map as Map
-
 
 -- Block structured language consists of three main constructions
 -- declaration(variable declaration, func declaration) 
@@ -19,23 +17,29 @@ import qualified Data.Map as Map
 --      int m = x * 45;
 --      return m;
 -- };
-intSize = 4 :: Int
-
-    
-
-
 data ExprType = TypeBool 
               | TypeInt 
               | TypeChar 
               | TypeVoid
-              | TypeFunction ExprType ExprType
-              deriving(Show, Read, Eq)
+              deriving(Read, Eq)
+
+instance Show ExprType where
+    show TypeBool = "bool"
+    show TypeInt = "int"
+    show TypeChar = "char"
+    show TypeVoid = "void"
 
 data BinaryOp = OpMultiply
               | OpDivide
               | OpPlus
               | OpMinus
-              deriving(Show, Read, Eq)
+              deriving(Read, Eq)
+
+instance Show BinaryOp where
+    show OpMultiply = "*"
+    show OpDivide = "/"
+    show OpPlus = "+"
+    show OpMinus = "-"
 
 -- ****** Expression ******
 data Expression = ExprEmpty
@@ -56,15 +60,13 @@ data Expression = ExprEmpty
                 | FuncParms [Expression]
                 | ExprBinOp BinaryOp Expression Expression
 
-                | FuncDef { retType :: ExprType 
-                          , funcName :: String 
-                          , funcArgs :: Expression 
-                          , funcBlock :: Expression }
+                | FuncDef ExprType String Expression Expression 
                 | FuncDecl ExprType String Expression
                 | FuncCall String [Expression]
                 | RetExpr Expression
+
                 | ExprIfElse Expression Expression Expression
-                | ExprStmt Expression Expression
+                | ExprStmt Expression String Expression
                 deriving (Show, Read, Eq)
 
 class PrettyExpr a where
@@ -74,32 +76,37 @@ class PrettyExpr a where
 -- ["exp1", "exp2"] so we can add indent into certain elements
 instance PrettyExpr Expression where
     prettyPrint expr = case expr of
-        VarRef ref -> [unwords ["Var", ref]]
+        VarRef ref -> [ref]
         VarDef t n expr -> [unwords [show t, n, "=", unwords $ prettyPrint expr]]
+        VarDecl t name -> [show t ++ " " ++ name]
+        VarAssign name expr -> [name ++ " = " ++ (unwords $ prettyPrint expr)] 
 
-        FuncDef ret name args block -> [unwords ["FUNCTION: ", show ret, show name], unwords $ prettyPrint args] 
-                                       ++  prettyPrint block
-        ExprIfElse stm exprIf exprElse -> ["IF ("] ++ prettyPrint stm ++ [") {"] 
+        FuncDef ret name args block -> [unwords ["Func: ", show ret, show name], 
+                                        (unwords $ prettyPrint args) ++ " {"] 
+                                       ++  prettyPrint block ++ ["}"]
+        ExprIfElse stm exprIf exprElse -> ["if (" ++ (unwords $ prettyPrint stm) ++ ") {"]
                                           ++ (indentBlock $ prettyPrint exprIf) 
-                                          ++ ["} " ++ "ELSE" ++ " {"] 
-                                          ++ (indentBlock $ prettyPrint exprElse) ++ ["}"]
+                                          ++ ["} " ++ "else" ++ " {"] 
+                                          ++ (indentBlock $ prettyPrint exprElse) 
+                                          ++ ["}"]
 
-        FuncParms args -> ["ARGS: " ++ (joinC $ map (unwords . prettyPrint) args)]
-        RetExpr e -> ["RETURN "  ++ (unwords $ prettyPrint e)]
+        FuncParms args -> ["Args: " ++ (joinC $ map (unwords . prettyPrint) args)]
+        RetExpr e -> ["Return "  ++ (unwords $ prettyPrint e)]
 
-        Block e -> "BLOCK: {" : concat (map (indentBlock . prettyPrint) e)
+        Block e -> concat (map (indentBlock . prettyPrint) e)
 
         ExprValueInt val -> [show val]
         ExprValueChar val -> [show val]
         ExprValueBool val -> [show val]
 
         ExprBinOp op exprL exprR -> [(unwords $ prettyPrint exprL) 
-                                     ++ "  " 
+                                     ++ " " 
                                      ++ (show op) 
-                                     ++ "  " 
+                                     ++ " " 
                                      ++ (unwords $ prettyPrint exprR)]
         ExprIncrem e -> [(unwords $ prettyPrint e) ++ "++"]
         ExprDecrem e -> [(unwords $ prettyPrint e) ++ "--"]
+        ExprStmt eL sign eR -> [(unwords $ prettyPrint eL) ++ " " ++ sign ++ " " ++ (unwords $ prettyPrint eR)]
         _                -> ["Nothing"]
 
 indentBlock = map("  " ++)

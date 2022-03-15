@@ -9,7 +9,7 @@ import qualified Text.Parsec.Token as Token
 lexer :: Token.TokenParser ()
 lexer = Token.makeTokenParser style
   where
-    ops = [ "+", "++", "*", "-", "/"]
+    ops = [ "+", "++", "*", "-", "/", "==", ">", "<"]
     names = ["if", "else", "return", "=="]
     style = emptyDef {
                Token.commentLine = "//"
@@ -24,7 +24,7 @@ lexer = Token.makeTokenParser style
 integer :: Parser Integer
 integer    = Token.integer lexer
 float      = Token.float lexer
-cchar      = Token.charLiteral lexer
+char      = Token.charLiteral lexer
 string     = Token.stringLiteral lexer
 parens     = Token.parens lexer
 braces     = Token.braces lexer
