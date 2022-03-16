@@ -158,7 +158,12 @@ codeGenIfElse (ExprStmt (VarRef nameL) sign (VarRef nameR)) = do
     stmtCmd lReg rReg lAddr rAddr elseL = ["STR r" ++ show lReg ++ ", " ++ "[" ++ show lAddr ++ "]", 
                                            "STR r" ++ show rReg ++ ", " ++ "[" ++ show rAddr ++ "]", 
                                            "CMP r" ++ show lReg ++ ", r" ++ show rReg, 
-                                           "BNE " ++ elseL]
+                                           cmpInstruction ++ " " ++ elseL]
+    cmpInstruction = case sign of
+                         "==" -> "BNE"
+                         ">"  -> "BLT"
+                         "<"  -> "BGT"
+                         _    -> "BNE"
 
 codeGenIfElse (Block (expr:xs)) = do
     state <- get
@@ -178,7 +183,7 @@ codeGenBinOp (VarAssign name expr) = do
         Left gSym -> do
             let symbolBinding = gsBinding gSym
             resReg <- codeGenBinOp expr
-            let cmd = ["MOV " ++ "[" ++ show symbolBinding ++ "], R" ++ show resReg]
+            let cmd = ["STR " ++ "[" ++ show symbolBinding ++ "], R" ++ show resReg]
             updateCode cmd
             return symbolBinding
         Right lSym -> error "Can change only global vars for now"
@@ -200,14 +205,10 @@ codeGenBinOp (VarRef name) = do
     case symbol of
         Left gSym -> do
             let binding = gsBinding gSym
-            let cmd = ["MOV " ++ "R" ++ show freeReg ++ ", [" ++ show binding ++ "]"]
+            let cmd = ["LDR " ++ "R" ++ show freeReg ++ ", [" ++ show binding ++ "]"]
             updateCode cmd
             return freeReg
-        Right lSym -> do
-            let off = lsBpOff lSym
-            let cmd = ["LDR R" ++ show freeReg ++ ", [BP-" ++ show off ++ "]"]
-            updateCode cmd
-            return freeReg
+        Right lSym -> error "Can change only global vars for now"
 
 codeGenBinOp (ExprValueInt value) = do
     freeReg <- allocateReg

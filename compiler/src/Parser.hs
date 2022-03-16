@@ -50,12 +50,26 @@ exprTypeP = do
         "void" -> return TypeVoid
         _      -> return TypeVoid
 
-stmtP :: Parser Expression
-stmtP = do
+stmtPEq :: Parser Expression
+stmtPEq = do
     exprL <- exprP
-    Lx.reserved "=="
+    try $ Lx.reserved "=="
     exprR <- exprP
     return $ ExprStmt exprL "==" exprR
+
+stmtPGt :: Parser Expression
+stmtPGt = do
+    exprL <- exprP
+    try $ Lx.reserved ">"
+    exprR <- exprP
+    return $ ExprStmt exprL ">" exprR
+
+stmtPLt :: Parser Expression
+stmtPLt = do
+    exprL <- exprP
+    try $ Lx.reserved "<"
+    exprR <- exprP
+    return $ ExprStmt exprL "<" exprR
 
 varDeclP :: Parser Expression
 varDeclP = do
@@ -81,7 +95,7 @@ varAssignP = do
 ifElseP :: Parser Expression
 ifElseP = do
     Lx.reserved "if"
-    cond <- Lx.parens stmtP
+    cond <- Lx.parens (try stmtPEq <|> try stmtPGt <|> try stmtPLt)
     ifBranch <- blockP
     Lx.reserved "else"
     elseBranch <- blockP
