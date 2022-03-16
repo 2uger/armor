@@ -21,14 +21,22 @@ data ProgrammState = ProgrammState { psCode :: Code
                                    , psBind :: Int }
                                    deriving(Show, Eq)
 
+printCodeSection :: ProgrammState -> String 
+printCodeSection ps = joinN $ map ("   " ++) $ psCode ps
+
+printDataSection :: ProgrammState -> String 
+printDataSection ps = joinN $ ["   " ++ show (gsBinding var) ++ ":" ++ gsName var | var <- psGST ps]
+
 printProgrammState :: ProgrammState -> String
 printProgrammState ps = "Code: \n" 
-                        ++ (joinN $ map ("   " ++) $ psCode ps) ++ "\n"
+                        ++ printCodeSection ps ++ "\n"
+                        ++ "Data: \n"
+                        ++ printDataSection ps ++ "\n"
                         ++ "GLOBAL SYMBOL TABLE: \n"
-                        ++ (joinN $ map show $ psGST ps)
-                        ++ "\n"
+                        ++ joinN (map show $ psGST ps) ++ "\n"
                         ++ "LOCAL SYMBOL TABLE: \n"
-                        ++ (joinN $ map show $ psLST ps)
+                        ++ joinN (map show $ psLST ps)
+
 
 type GSymbolTable = [GlobalSymbol]
 
@@ -39,19 +47,16 @@ data GlobalSymbol = GlobalSymbol { gsName :: String
                                  , gsSize :: Int
                                  -- memory location of symbol
                                  , gsBinding :: Int
-                                 , gsParms :: Expression
-                                 -- address of starting code of function
-                                 , gsFlabel :: Int }
+                                 , gsParms :: Expression}
                                  deriving (Eq)
 
 instance Show GlobalSymbol where
-    show (GlobalSymbol n t s b ps lb) =
+    show (GlobalSymbol n t s b ps) =
         "Name: " ++ n ++ "\n"
         ++ "Type: " ++ show t ++ "\n"
         ++ "Size: " ++ show s ++ "\n"
         ++ "Binding: " ++ show b ++ "\n"
         ++ "Parms: " ++ show ps ++ "\n"
-        ++ "Label: " ++ show lb ++ "\n"
 
 -- LocalSymbol name type (BP offset)
 data LocalSymbol = LocalSymbol { lsName :: String
@@ -63,9 +68,10 @@ addSymbol :: GlobalSymbol -> State ProgrammState ()
 addSymbol symb = do
     state <- get
     let table = psGST state
-    case elem symb table of
-        False -> put $ state { psGST = table ++ [symb] }
-        True -> error $ "Symbol " ++ gsName symb ++ " already exists"
+    if symb `elem` table then
+        error $ "Symbol " ++ gsName symb ++ " already exists"
+    else
+        put $ state { psGST = table ++ [symb] }
 
 removeSymbol :: String -> State ProgrammState ()
 removeSymbol name = do
@@ -97,11 +103,11 @@ fillSymbolTable (expr:xs) =
         VarDecl varType name -> do
             let offset = memOffset varType
             bind <- memBind offset
-            let symbol = GlobalSymbol name varType offset bind ExprEmpty 0
+            let symbol = GlobalSymbol name varType offset bind ExprEmpty
             addSymbol symbol 
             fillSymbolTable xs
         FuncDecl funcType name parms -> do
-            let symbol = GlobalSymbol name funcType 0 0 parms 1
+            let symbol = GlobalSymbol name funcType 0 0 parms
             addSymbol symbol
             fillSymbolTable xs
         _ -> do
@@ -118,8 +124,9 @@ fillSymbolTable (expr:xs) =
     -- return memory offset depending on Type
     memOffset :: ExprType -> Int
     memOffset t = case t of
-                      TypeInt -> 2
+                      TypeInt  -> 2
                       TypeChar -> 1
+                      _        -> 0
 
 fillSymbolTable [] = do
     return ()

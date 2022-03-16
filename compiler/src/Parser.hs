@@ -21,12 +21,12 @@ factor :: Parser Expression
 factor = try intP 
      <|> try charP 
      <|> try varAssignP
-     <|> try funcP
+     <|> try funcDefP
      <|> try funcCallP
      <|> try funcDeclP
-     <|> try incremP
      <|> try varDefineP
      <|> try varDeclP
+     <|> try incremP
      <|> try varP
      <|> try ifElseP
      <|> try returnP
@@ -47,7 +47,6 @@ exprTypeP = do
     case exprType of
         "int" -> return TypeInt
         "char" -> return TypeChar
-        "bool" -> return TypeBool
         "void" -> return TypeVoid
         _      -> return TypeVoid
 
@@ -86,7 +85,6 @@ ifElseP = do
     ifBranch <- blockP
     Lx.reserved "else"
     elseBranch <- blockP
-
     return $ ExprIfElse cond (Block ifBranch) (Block elseBranch)
 
 blockP :: Parser [Expression]
@@ -101,14 +99,8 @@ incremP = do
     Lx.reserved "++"
     return $ ExprIncrem $ VarRef varIdent
 
-decremP :: Parser Expression
-decremP = do
-    varIdent <- Lx.identifier
-    Lx.reserved "--"
-    return $ ExprDecrem $ VarRef varIdent
-
-funcP :: Parser Expression
-funcP = do
+funcDefP :: Parser Expression
+funcDefP = do
     retType <- exprTypeP
     funcName <- Lx.identifier
     parms <- Lx.parens $ Lx.commaSep varDeclP

@@ -17,14 +17,12 @@ import Data.List
 --      int m = x * 45;
 --      return m;
 -- };
-data ExprType = TypeBool 
-              | TypeInt 
+data ExprType = TypeInt 
               | TypeChar 
               | TypeVoid
               deriving(Read, Eq)
 
 instance Show ExprType where
-    show TypeBool = "bool"
     show TypeInt = "int"
     show TypeChar = "char"
     show TypeVoid = "void"
@@ -51,10 +49,8 @@ data Expression = ExprEmpty
                 -- Hardcode constant
                 | ExprValueInt Integer 
                 | ExprValueChar Char
-                | ExprValueBool Bool
 
                 | ExprIncrem Expression
-                | ExprDecrem Expression
 
                 | Block [Expression]
                 | FuncParms [Expression]
@@ -81,9 +77,9 @@ instance PrettyExpr Expression where
         VarDecl t name -> [show t ++ " " ++ name]
         VarAssign name expr -> [name ++ " = " ++ (unwords $ prettyPrint expr)] 
 
-        FuncDef ret name args block -> [unwords ["Func: ", show ret, show name], 
-                                        (unwords $ prettyPrint args) ++ " {"] 
-                                       ++  prettyPrint block ++ ["}"]
+        FuncDef ret name args block -> [unwords ["Func: ", show ret, show name], (unwords $ prettyPrint args) ++ " {"] 
+                                       ++  prettyPrint block 
+                                       ++ ["}"]
         ExprIfElse stm exprIf exprElse -> ["if (" ++ (unwords $ prettyPrint stm) ++ ") {"]
                                           ++ (indentBlock $ prettyPrint exprIf) 
                                           ++ ["} " ++ "else" ++ " {"] 
@@ -97,7 +93,6 @@ instance PrettyExpr Expression where
 
         ExprValueInt val -> [show val]
         ExprValueChar val -> [show val]
-        ExprValueBool val -> [show val]
 
         ExprBinOp op exprL exprR -> [(unwords $ prettyPrint exprL) 
                                      ++ " " 
@@ -105,7 +100,6 @@ instance PrettyExpr Expression where
                                      ++ " " 
                                      ++ (unwords $ prettyPrint exprR)]
         ExprIncrem e -> [(unwords $ prettyPrint e) ++ "++"]
-        ExprDecrem e -> [(unwords $ prettyPrint e) ++ "--"]
         ExprStmt eL sign eR -> [(unwords $ prettyPrint eL) ++ " " ++ sign ++ " " ++ (unwords $ prettyPrint eR)]
         _                -> ["Nothing"]
 

@@ -135,23 +135,40 @@ codeGenIfElse (ExprIfElse stmt exprIf exprElse) = do
     codeGenIfElse exprIf
     codeGenIfElse exprElse
 
-codeGenIfElse (ExprStmt exprL sign exprR) = do
+codeGenIfElse (ExprStmt (VarRef nameL) sign (VarRef nameR)) = do
     state <- get
-    let elseL = "L" ++ (show $ (psLabels state + 1))
-    let cmd = case (exprL, exprR) of
-                  (VarRef nameL, VarRef nameR) -> stmtCmd nameL nameR elseL
-    put $ state { psCode = (psCode state) ++ cmd }
+    freeReg1 <- allocateReg
+    freeReg2 <- allocateReg
+    let elseLable = "L" ++ show (psLabels state + 1)
+    symbolL <- lookupSymbol nameL
+    symbolR <- lookupSymbol nameR
+
+    let symbolLAddr = case symbolL of
+                       Left gSym -> gsBinding gSym
+                       Right lSym -> error "Can change only global vars for now"
+    let symbolRAddr = case symbolR of
+                       Left gSym -> gsBinding gSym
+                       Right lSym -> error "Can change only global vars for now"
+
+    let cmd = stmtCmd freeReg1 freeReg2 symbolLAddr symbolRAddr elseLable
+
+    put $ state { psCode = psCode state ++ cmd }
     return 0
   where
-    stmtCmd l r elseL = ["MOV r0, " ++ l, "MOV r1, " ++ r, "CMP r0, r1", "BEQ " ++ elseL]
+    stmtCmd lReg rReg lAddr rAddr elseL = ["STR r" ++ show lReg ++ ", " ++ "[" ++ show lAddr ++ "]", 
+                                           "STR r" ++ show rReg ++ ", " ++ "[" ++ show rAddr ++ "]", 
+                                           "CMP r" ++ show lReg ++ ", r" ++ show rReg, 
+                                           "BNE " ++ elseL]
 
 codeGenIfElse (Block (expr:xs)) = do
     state <- get
-    let currL = psLabels state
-    put $ state { psCode = (psCode state) ++ ["L" ++ show currL ++ ":"] ,
-                  psLabels = currL + 1}
+    let currLable = psLabels state
+    put $ state { psCode = psCode state ++ ["L" ++ show currLable ++ ":"] ,
+                  psLabels = currLable + 1}
     codeGenBinOp expr
     return 0
+
+codeGenIfElse x = error $ show x
 
 -- Code generation for Binary Operations
 codeGenBinOp :: Expression -> State ProgrammState Int
