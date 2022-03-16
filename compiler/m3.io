@@ -3,7 +3,9 @@ r = 2 + 2;
 int m;
 int n;
 m = 3 * 2 + 2;
+int k;
 n = 10000;
+k++;
 
 if (m > r) {
     m = 1;

@@ -38,19 +38,6 @@ codeGen (expr:xs) = do
 
 codeGen [] = do return 0
 
-codeGenIncrem :: Expression -> State ProgrammState Int
-codeGenIncrem (ExprIncrem (VarRef name)) = do
-    symbol <- lookupSymbol name
-    let mem = case symbol of
-                  Left gSymb -> show $ gsBinding gSymb
-                  Right lSymb -> "BP-" ++ (show $ lsBpOff lSymb)
-    freeReg <- allocateReg
-    let code  = ["LDR " ++ "R" ++ show freeReg ++ "[" ++ mem ++ "]",
-                 "ADD " ++ "R" ++ show freeReg ++ " R" ++ show freeReg ++ " #1",
-                 "MOV " ++ "[" ++ mem ++ "] " ++ "R" ++ show freeReg]
-    updateCode code
-    return 0
-
 codeGenFuncCall :: Expression -> State ProgrammState Int
 codeGenFuncCall (FuncCall fName (p:parms)) =
     case p of
@@ -128,6 +115,19 @@ codeGenReturn (VarRef name) = do
 codeGenReturn (ExprBinOp op le re) = do
     resReg <- codeGenBinOp $ ExprBinOp op le re
     return resReg
+
+codeGenIncrem :: Expression -> State ProgrammState Int
+codeGenIncrem (ExprIncrem (VarRef name)) = do
+    symbol <- lookupSymbol name
+    let mem = case symbol of
+                  Left gSymb -> show $ gsBinding gSymb
+                  Right lSymb -> "BP-" ++ (show $ lsBpOff lSymb)
+    freeReg <- allocateReg
+    let code  = ["LDR " ++ "R" ++ show freeReg ++ " [" ++ mem ++ "]",
+                 "ADD " ++ "R" ++ show freeReg ++ " R" ++ show freeReg ++ " #1",
+                 "STR " ++ "R" ++ show freeReg ++ " [" ++ mem ++ "]" ]
+    updateCode code
+    return 0
 
 codeGenIfElse :: Expression -> State ProgrammState Int
 codeGenIfElse (ExprIfElse stmt exprIf exprElse) = do
