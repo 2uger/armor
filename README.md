@@ -22,9 +22,12 @@ int main(int k) -> {
     return c;
 }
 ```
+### How to run
+* stack build --compiler ghc-{ghc-version} --system-ghc
+* stack exec compiler-exe --compiler ghc-{ghc-version} --system-ghc m3.io
 
-Main idea is to create basic, but fundamentals components of compiler.
-Written fully on Haskell for practicing purposes.
+Create basic, but fundamentals components of compiler.
+Written fully on Haskell for practice purposes.
 
 ### Short overview of what to think about:
   - Lexical analyzer(simple tokens analyz)

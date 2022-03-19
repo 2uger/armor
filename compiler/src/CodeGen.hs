@@ -6,6 +6,7 @@ import Data.List
 import Ast
 import Symbols
 import Utils
+import Const
 
 -- default registers
 regTable :: RegTable
@@ -16,16 +17,16 @@ regTable = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 codeGen :: [Expression] -> State ProgrammState Int
 codeGen (expr:xs) = do
     case expr of 
-        ExprIfElse _ _ _ -> do
+        ExprIfElse {} -> do
             codeGenIfElse expr
             codeGen xs
-        FuncCall _  _ -> do 
+        FuncCall {} -> do 
             codeGenFuncCall expr 
             codeGen xs
-        VarAssign _ _  -> do 
+        VarAssign {}  -> do 
             codeGenBinOp expr
             codeGen xs
-        FuncDef _ _ _ _ -> do
+        FuncDef {} -> do
             codeGenFunc expr
             codeGen xs
         RetExpr _ -> do
@@ -65,12 +66,14 @@ codeGenFuncCall (FuncCall fName _) = do
                 "BL " ++ fName, 
                 "POP " ++ "R" ++ show freeReg]
     updateCode cmds
-    return freeReg 
+    return freeReg
+
+codeGenFuncCall x = error $ "Calling CodeGen FuncCall with bad Expression Type: " ++ show x
 
 -- arg-1
 -- arg-2...
 -- return value
--- return address (CPU push that value itself, after function call another function)
+-- return address (CPU push that value itself, after function call another one)
 -- old BP
 -- loc_1 (new BP point there)
 -- loc_2
@@ -78,19 +81,23 @@ codeGenFunc (FuncDef fType fName (FuncParms parms) (Block expr)) = do
     -- BP offset depending on how much parms function should consume
     -- and const value of RetValue space, RetAddress, OldBP
     fillLocalTable parms [] ((length parms) * 2 + 6) 
-    let label = "\n" ++ fName ++ ":"
+    let funcLable = "\n" ++ fName ++ ":"
     let cmd = ["PUSH BP", "MOV BP, SP"]
-    updateCode $ label : cmd
+    updateCode $ funcLable : cmd
     codeGen expr
     cleanLocalTable
     return 0
 
+codeGenFunc x = error $ "Calling CodeGen Func with bad Expression Type: " ++ show x
+
 codeGenReturn :: Expression -> State ProgrammState Int
 codeGenReturn (RetExpr e) = do
     resReg <- codeGenReturn e
-    let cmds = ["MOV " ++ "[BP-6] " ++ "R" ++ show resReg,
-                "POP {BP, LR}",
-                "RET "]
+    freeReg <- allocateReg
+    let cmds = ["STR " ++ "R" ++ show resReg ++ ", [BP-" ++ show (instrSize * 2) ++ "]",
+                "LDR " ++ "R" ++ show freeReg ++ ", [BP-2]",
+                "MOV PC, " ++ "R" ++ show freeReg]
+    releaseReg freeReg
     state <- get
     put $ state { psCode = psCode state ++ cmds } 
     return 0
@@ -102,32 +109,32 @@ codeGenReturn (VarRef name) = do
         Left gSym -> do
             let symBind = gsBinding gSym
             freeReg <- allocateReg
-            let cmd = ["LDR " ++ "R" ++ show freeReg ++ " [" ++ show symBind ++ "]"]
+            let cmd = ["LDR " ++ "R" ++ show freeReg ++ ", [" ++ show symBind ++ "]"]
+            releaseReg freeReg
             updateCode cmd
             return freeReg
-        Right lSym -> do
-            let bpOffset = lsBpOff lSym
-            freeReg <- allocateReg
-            let cmd = ["LDR " ++ "R" ++ show freeReg ++ " [BP-" ++ show bpOffset ++ "]"]
-            updateCode cmd
-            return freeReg
+        -- TODO: make it work with local variables
+        Right lSym -> error "Only global variables for now"
 
-codeGenReturn (ExprBinOp op le re) = do
-    resReg <- codeGenBinOp $ ExprBinOp op le re
-    return resReg
+codeGenReturn (ExprBinOp op l r) = do codeGenBinOp $ ExprBinOp op l r
+
+codeGenReturn x = error $ "Callign CodeGen Return with bad Expression Type: " ++ show x
 
 codeGenIncrem :: Expression -> State ProgrammState Int
 codeGenIncrem (ExprIncrem (VarRef name)) = do
     symbol <- lookupSymbol name
     let mem = case symbol of
                   Left gSymb -> show $ gsBinding gSymb
-                  Right lSymb -> "BP-" ++ (show $ lsBpOff lSymb)
+                  Right lSymb -> "BP-" ++ show (lsBpOff lSymb)
     freeReg <- allocateReg
     let code  = ["LDR " ++ "R" ++ show freeReg ++ " [" ++ mem ++ "]",
                  "ADD " ++ "R" ++ show freeReg ++ " R" ++ show freeReg ++ " #1",
                  "STR " ++ "R" ++ show freeReg ++ " [" ++ mem ++ "]" ]
     updateCode code
+    releaseReg freeReg
     return 0
+
+codeGenIncrem x = error $ "Calling CodeGen Increment with bad Expression Type: " ++ show x
 
 codeGenIfElse :: Expression -> State ProgrammState Int
 codeGenIfElse (ExprIfElse stmt exprIf exprElse) = do
@@ -151,8 +158,9 @@ codeGenIfElse (ExprStmt (VarRef nameL) sign (VarRef nameR)) = do
                        Right lSym -> error "Can change only global vars for now"
 
     let cmd = stmtCmd freeReg1 freeReg2 symbolLAddr symbolRAddr elseLable
-
     put $ state { psCode = psCode state ++ cmd }
+    releaseReg freeReg1
+    releaseReg freeReg2
     return 0
   where
     stmtCmd lReg rReg lAddr rAddr elseL = ["STR r" ++ show lReg ++ ", " ++ "[" ++ show lAddr ++ "]", 
@@ -183,8 +191,9 @@ codeGenBinOp (VarAssign name expr) = do
         Left gSym -> do
             let symbolBinding = gsBinding gSym
             resReg <- codeGenBinOp expr
-            let cmd = ["STR " ++ "[" ++ show symbolBinding ++ "], R" ++ show resReg]
+            let cmd = ["STR " ++ "R" ++ show resReg ++ ", [" ++ show symbolBinding ++ "]" ]
             updateCode cmd
+            releaseReg resReg
             return symbolBinding
         Right lSym -> error "Can change only global vars for now"
 
@@ -212,9 +221,9 @@ codeGenBinOp (VarRef name) = do
 
 codeGenBinOp (ExprValueInt value) = do
     freeReg <- allocateReg
-    let cmd = ["MOV " ++ "R" ++ show freeReg ++ ", #" ++ (show value)]
+    let cmd = ["MOV " ++ "R" ++ show freeReg ++ ", #" ++ show value]
     updateCode cmd
-    return $ freeReg
+    return freeReg
 
 codeGenBinOp (FuncCall name e) = do
     codeGenFuncCall $ FuncCall name e

@@ -4,6 +4,7 @@ import Control.Monad.State
 import Data.List
 
 import Ast
+import Const
 
 type Code = [String]
 type RegTable = [Int]
@@ -124,8 +125,8 @@ fillSymbolTable (expr:xs) =
     -- return memory offset depending on Type
     memOffset :: ExprType -> Int
     memOffset t = case t of
-                      TypeInt  -> 2
-                      TypeChar -> 1
+                      TypeInt  -> intSize
+                      TypeChar -> charSize
                       _        -> 0
 
 fillSymbolTable [] = do
