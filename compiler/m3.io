@@ -1,6 +1,16 @@
 int r;
 int m;
-void m(int k, int l) -> {
+
+m = m + r;
+
+void func(int k, int l) -> {
+    if (r == m) {
+        r = 2 * 2;
+    } else {
+        m = 2 * r;
+    };
     k++;
     return l;
 };
+
+m = func(2, 2);

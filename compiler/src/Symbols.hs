@@ -29,7 +29,7 @@ printDataSection :: ProgrammState -> String
 printDataSection ps = joinN $ ["   " ++ show (gsBinding var) ++ ":" ++ gsName var | var <- psGST ps]
 
 printProgrammState :: ProgrammState -> String
-printProgrammState ps = "Text:" 
+printProgrammState ps = "Text:\n" 
                         ++ printCodeSection ps ++ "\n"
                         ++ "Data: \n"
                         ++ printDataSection ps ++ "\n"

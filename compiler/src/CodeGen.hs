@@ -42,29 +42,33 @@ codeGen [] = do return 0
 codeGenFuncCall :: Expression -> State ProgrammState Int
 codeGenFuncCall (FuncCall fName (p:parms)) =
     case p of
-        VarRef vName ->
-            do
+        VarRef vName -> do
+            state <- get
+            symbol <- lookupSymbol vName
+            let mem = case symbol of
+                          Left gSymb -> show $ gsBinding gSymb
+                          Right lSymb -> "BP-" ++ show (lsBpOff lSymb)
+            freeReg <- allocateReg
+            let cmds = ["LDR R" ++ show freeReg ++ ", [" ++ mem ++ "]", 
+                        "PUSH " ++ "{R" ++ show freeReg ++ "}"]
+            updateCode cmds
+            codeGenFuncCall $ FuncCall fName parms
+        ExprValueInt value -> do
                 state <- get
-                symbol <- lookupSymbol vName
-                let mem = case symbol of
-                              Left gSymb -> show $ gsBinding gSymb
-                              Right lSymb -> "BP-" ++ (show $ lsBpOff lSymb)
-                let cmd = "PUSH " ++ "[" ++ mem ++ "]"
-                put $ state { psCode = psCode state ++ [cmd] } 
-                codeGenFuncCall $ FuncCall fName parms
-        ExprValueInt value ->
-            do
-                state <- get
-                let cmd = "PUSH " ++ "#" ++ show value
-                put $ state { psCode = psCode state ++ [cmd] }
+                freeReg <- allocateReg
+                let cmds = ["MOV R" ++ show freeReg ++ ", #" ++ show value, 
+                            "PUSH " ++ "{R" ++ show freeReg ++ "}"]
+                updateCode cmds
+                releaseReg freeReg 
                 codeGenFuncCall $ FuncCall fName parms
         sm -> error $ show sm
 
 codeGenFuncCall (FuncCall fName _) = do 
     freeReg <- allocateReg
-    let cmds = ["SUB SP 2", 
+    let cmds = ["SUB SP, SP, #2", 
                 "BL " ++ fName, 
-                "POP " ++ "R" ++ show freeReg]
+                "ADD SP, SP, #2",
+                "POP " ++ "{R" ++ show freeReg ++ "}"]
     updateCode cmds
     return freeReg
 
@@ -83,7 +87,7 @@ codeGenFunc (FuncDef fType fName (FuncParms parms) (Block expr)) = do
 
     -- TODO: fill local table only with function arguments, but need to use variables
     --       through the whole function declaration
-    fillLocalTable parms [] ((length parms) * intSize + 3 * instrSize) 
+    fillLocalTable parms [] (length parms * intSize + 3 * instrSize) 
     let funcLable = "\n" ++ fName ++ ":"
     let cmd = ["PUSH BP", "MOV BP, SP"]
     updateCode $ funcLable : cmd
@@ -98,11 +102,14 @@ codeGenReturn (RetExpr e) = do
     resReg <- codeGenReturn e
     freeReg <- allocateReg
     let cmds = ["STR " ++ "R" ++ show resReg ++ ", [BP-" ++ show (instrSize * 3) ++ "]",
+                "MOV SP, BP",
+                "ADD SP, SP, #2",
                 "LDR " ++ "R" ++ show freeReg ++ ", [BP-" ++ show (instrSize * 2) ++ "]",
-                "MOV PC, " ++ "R" ++ show freeReg]
+                "MOV PC, " ++ "R" ++ show freeReg ++ "\n"]
+    releaseReg resReg
     releaseReg freeReg
     state <- get
-    put $ state { psCode = psCode state ++ cmds } 
+    updateCode cmds
     return 0
 
 -- return register where final value is located
