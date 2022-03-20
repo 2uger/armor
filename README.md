@@ -1,5 +1,5 @@
-### Compiler
-#### Create basic, but fundamentals components of compiler:
+## Compiler
+### Create basic, but fundamentals components of compiler:
 * Lexer
 * Parser
 * Syntax and Semantic analysis
