@@ -29,14 +29,14 @@ printDataSection :: ProgrammState -> String
 printDataSection ps = joinN $ ["   " ++ show (gsBinding var) ++ ":" ++ gsName var | var <- psGST ps]
 
 printProgrammState :: ProgrammState -> String
-printProgrammState ps = "Code: \n" 
+printProgrammState ps = "Text:" 
                         ++ printCodeSection ps ++ "\n"
                         ++ "Data: \n"
                         ++ printDataSection ps ++ "\n"
-                        ++ "GLOBAL SYMBOL TABLE: \n"
-                        ++ joinN (map show $ psGST ps) ++ "\n"
-                        ++ "LOCAL SYMBOL TABLE: \n"
-                        ++ joinN (map show $ psLST ps)
+                        -- ++ "GLOBAL SYMBOL TABLE: \n"
+                        -- ++ joinN (map show $ psGST ps) ++ "\n"
+                        -- ++ "LOCAL SYMBOL TABLE: \n"
+                        -- ++ joinN (map show $ psLST ps)
 
 
 type GSymbolTable = [GlobalSymbol]
@@ -144,7 +144,7 @@ cleanLocalTable = do
 -- create local symbol table for current scope function
 fillLocalTable :: [Expression] -> LSymbolTable -> Int -> State ProgrammState Int
 fillLocalTable ((VarDecl varType varName):xs) table offset = do
-    fillLocalTable xs (table ++ [LocalSymbol varName varType offset]) (offset-2)
+    fillLocalTable xs (table ++ [LocalSymbol varName varType offset]) (offset-intSize)
 
 fillLocalTable [] table _ = do
     state <- get

@@ -103,7 +103,7 @@ ifElseP = do
 
 blockP :: Parser [Expression]
 blockP = Lx.braces $ many $
-    do exp <- exprP
+    do exp <- try exprP
        Lx.reserved ";"
        return exp
 

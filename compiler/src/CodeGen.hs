@@ -80,7 +80,10 @@ codeGenFuncCall x = error $ "Calling CodeGen FuncCall with bad Expression Type: 
 codeGenFunc (FuncDef fType fName (FuncParms parms) (Block expr)) = do
     -- BP offset depending on how much parms function should consume
     -- and const value of RetValue space, RetAddress, OldBP
-    fillLocalTable parms [] ((length parms) * 2 + 6) 
+
+    -- TODO: fill local table only with function arguments, but need to use variables
+    --       through the whole function declaration
+    fillLocalTable parms [] ((length parms) * intSize + 3 * instrSize) 
     let funcLable = "\n" ++ fName ++ ":"
     let cmd = ["PUSH BP", "MOV BP, SP"]
     updateCode $ funcLable : cmd
@@ -94,8 +97,8 @@ codeGenReturn :: Expression -> State ProgrammState Int
 codeGenReturn (RetExpr e) = do
     resReg <- codeGenReturn e
     freeReg <- allocateReg
-    let cmds = ["STR " ++ "R" ++ show resReg ++ ", [BP-" ++ show (instrSize * 2) ++ "]",
-                "LDR " ++ "R" ++ show freeReg ++ ", [BP-2]",
+    let cmds = ["STR " ++ "R" ++ show resReg ++ ", [BP-" ++ show (instrSize * 3) ++ "]",
+                "LDR " ++ "R" ++ show freeReg ++ ", [BP-" ++ show (instrSize * 2) ++ "]",
                 "MOV PC, " ++ "R" ++ show freeReg]
     releaseReg freeReg
     state <- get
@@ -114,7 +117,12 @@ codeGenReturn (VarRef name) = do
             updateCode cmd
             return freeReg
         -- TODO: make it work with local variables
-        Right lSym -> error "Only global variables for now"
+        Right lSym -> do
+            let bpOff = lsBpOff lSym
+            freeReg <- allocateReg
+            let cmd = ["LDR " ++ "R" ++ show freeReg ++ " [BP-" ++ show bpOff ++ "]"]
+            updateCode cmd
+            return freeReg
 
 codeGenReturn (ExprBinOp op l r) = do codeGenBinOp $ ExprBinOp op l r
 
@@ -127,9 +135,9 @@ codeGenIncrem (ExprIncrem (VarRef name)) = do
                   Left gSymb -> show $ gsBinding gSymb
                   Right lSymb -> "BP-" ++ show (lsBpOff lSymb)
     freeReg <- allocateReg
-    let code  = ["LDR " ++ "R" ++ show freeReg ++ " [" ++ mem ++ "]",
-                 "ADD " ++ "R" ++ show freeReg ++ " R" ++ show freeReg ++ " #1",
-                 "STR " ++ "R" ++ show freeReg ++ " [" ++ mem ++ "]" ]
+    let code  = ["LDR " ++ "R" ++ show freeReg ++ ", [" ++ mem ++ "]",
+                 "ADD " ++ "R" ++ show freeReg ++ ", R" ++ show freeReg ++ ", #1",
+                 "STR " ++ "R" ++ show freeReg ++ ", [" ++ mem ++ "]" ]
     updateCode code
     releaseReg freeReg
     return 0
@@ -152,10 +160,10 @@ codeGenIfElse (ExprStmt (VarRef nameL) sign (VarRef nameR)) = do
 
     let symbolLAddr = case symbolL of
                        Left gSym -> gsBinding gSym
-                       Right lSym -> error "Can change only global vars for now"
+                       Right lSym -> error "Can not use local variables in if-else statement"
     let symbolRAddr = case symbolR of
                        Left gSym -> gsBinding gSym
-                       Right lSym -> error "Can change only global vars for now"
+                       Right lSym -> error "Can not use local variables in if-else statement"
 
     let cmd = stmtCmd freeReg1 freeReg2 symbolLAddr symbolRAddr elseLable
     put $ state { psCode = psCode state ++ cmd }
@@ -195,7 +203,7 @@ codeGenBinOp (VarAssign name expr) = do
             updateCode cmd
             releaseReg resReg
             return symbolBinding
-        Right lSym -> error "Can change only global vars for now"
+        Right lSym -> error "Can not use local variables in var assignment"
 
 codeGenBinOp (ExprBinOp op exprL exprR) = do
     freeReg <- allocateReg
@@ -217,7 +225,12 @@ codeGenBinOp (VarRef name) = do
             let cmd = ["LDR " ++ "R" ++ show freeReg ++ ", [" ++ show binding ++ "]"]
             updateCode cmd
             return freeReg
-        Right lSym -> error "Can change only global vars for now"
+        Right lSym -> do
+            let bpOff = lsBpOff lSym
+            freeReg <- allocateReg
+            let cmd = ["LDR " ++ "R" ++ show freeReg ++ " [BP-" ++ show bpOff ++ "]"]
+            updateCode cmd
+            return freeReg
 
 codeGenBinOp (ExprValueInt value) = do
     freeReg <- allocateReg
