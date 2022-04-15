@@ -1,26 +1,19 @@
-program   :: declList
-declList  :: decl declListN
-declListN :: decl declListN | 'E'
+program   :: decl
 decl      :: varDecl | funcDecl
 
-#+
-varDecl       :: typeSpec varDeclList ';'
-scopedVarDecl :: 'static' typeSpec varDeclList ';' | typeSpec varDeclList ';' 
-typeSpec      :: 'INT' | 'BOOL' | 'CHAR'
-varDeclList   :: varDeclInit varDeclListN
-varDeclListN  :: 'E' | ',' varDeclInit varDeclListN
-varDeclInit   :: varDeclId | varDeclId ':' simpleExpr
-varDeclId     :: 'ID' | 'ID' '[' NUMCONST ']'
+varDecl       :: typeSpec varDeclInit ';'
+typeSpec      :: 'int' | 'bool' | 'char'
+varDeclInit   :: varDeclId | varDeclId '=' simpleExpr
+varDeclId     :: ID | ID '[' NUMCONST ']'
 
-#+
-funcDecl     :: typeSpec 'ID' '(' parms ')' stmt
+funcDecl     :: typeSpec ID '(' parms ')' stmt
 parms        :: parmList | 'E'
-parmList     :: parmTypeList parmListN
-parmListN    :: 'E' | ',' parmTypeList parmListN
-parmTypeList :: typeSpec parmId
-parmId       :: 'ID' | 'ID' '[' ']'
+parmList     :: parmType parmListN
+parmListN    :: 'E' | ',' parmType parmListN
+parmType     :: typeSpec ID
 
-#-
+
+********************
 stmt         :: exprStmt | compoundStmt | iterStmt | returnStmt | breakStmt 
 exprStmt     :: expr ';' | ';'
 compoundStmt :: '{' localDecls stmtList '}'
