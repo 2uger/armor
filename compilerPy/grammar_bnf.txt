@@ -1,0 +1,51 @@
+program   :: declList
+declList  :: decl declListN
+declListN :: decl declListN | 'E'
+decl      :: varDecl | funcDecl
+
+#+
+varDecl       :: typeSpec varDeclList ';'
+scopedVarDecl :: 'static' typeSpec varDeclList ';' | typeSpec varDeclList ';' 
+typeSpec      :: 'INT' | 'BOOL' | 'CHAR'
+varDeclList   :: varDeclInit varDeclListN
+varDeclListN  :: 'E' | ',' varDeclInit varDeclListN
+varDeclInit   :: varDeclId | varDeclId ':' simpleExpr
+varDeclId     :: 'ID' | 'ID' '[' NUMCONST ']'
+
+#+
+funcDecl     :: typeSpec 'ID' '(' parms ')' stmt
+parms        :: parmList | 'E'
+parmList     :: parmTypeList parmListN
+parmListN    :: 'E' | ',' parmTypeList parmListN
+parmTypeList :: typeSpec parmId
+parmId       :: 'ID' | 'ID' '[' ']'
+
+#-
+stmt         :: exprStmt | compoundStmt | iterStmt | returnStmt | breakStmt 
+exprStmt     :: expr ';' | ';'
+compoundStmt :: '{' localDecls stmtList '}'
+stmtList     :: stmtList stmt | 'E'
+localDecls   :: localDecls scopedVarDecl | 'E'
+iterStmt     :: 'while' '(' simpleExpr ')' stmt
+returnStmt   :: 'return' ';' | return exp ';'
+breakStmt    :: break ;
+
+#-
+expr         :: mutable = expr | mutable = expr | mutable ++ | mutable -- | simpleExpr
+simpleExpr   :: simpleExpr OR andExpr | and Exp
+andExpr      :: andExpr and unaryRelExpr | unaryRelExpr
+unaryRelExpr :: NOT unaryRelExpr | relExpr
+
+relExpr :: sumExpr
+sumExpr :: sumExpr sumOp mulExpr | mulExpr
+mulExpr :: mulExpr mulOp factor | factor
+sumOp   :: + | -
+mulOp   :: * | / | %
+
+factor      :: mutable | immutable 
+mutable     :: ID | ID[expr]
+immutable   :: ( expr ) | call | constant
+call        :: ID(args)
+args        :: argsList | E
+argsList    :: argsList , expr | expr
+constant    :: NUMCONSTANT | CHARCONSTANT | STRINGCONSTANT
