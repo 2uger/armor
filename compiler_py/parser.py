@@ -70,12 +70,9 @@ def parse_type_spec(tokens):
         return False
 
 def parse_parms(tokens):
-    t = scan_token(tokens)
-    if t in (Tokens.INT, Tokens.CHAR):
-        putback_token(tokens, t)
+    if expect_tokens(tokens, [Tokens.INT, Tokens.CHAR]):
         return parse_parms_list(tokens)
     else:
-        putback_token(tokens, t)
         return True
 
 def parse_parms_list(tokens):
@@ -122,12 +119,9 @@ def parse_compound_stmt(tokens):
            and scan_token(tokens) == Tokens.R_CRL_BRCKT
 
 def parse_stmt_list(tokens):
-    t = scan_token(tokens)
-    if t and t in (Tokens.IDENTIFIER, Tokens.L_CRL_BRCKT, Tokens.RETURN):
-        putback_token(tokens, t)
+    if expect_tokens(tokens, [Tokens.IDENTIFIER, Tokens.L_CRL_BRCKT, Tokens.RETURN]):
         return parse_stmt(tokens) and parse_stmt_list(tokens)
     elif t == Tokens.R_CRL_BRCKT:
-        putback_token(tokens, t)
         return True
     else:
         return False

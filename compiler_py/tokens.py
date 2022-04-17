@@ -72,3 +72,11 @@ def expect_token(tokens, expect_t):
         putback_token(tokens, t)
         return False
 
+def expect_tokens(tokens, expect_ts):
+    t = scan_token(tokens)
+    if t and t in expect_ts:
+        putback_token(tokens, t)
+        return True
+    else:
+        putback_token(tokens, t)
+        return False
