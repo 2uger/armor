@@ -135,7 +135,6 @@ def parse_return_stmt(tokens):
     else:
         return False
 
-
 def parse_identifier(tokens):
     t = scan_token(tokens)
     return t == Tokens.IDENTIFIER
