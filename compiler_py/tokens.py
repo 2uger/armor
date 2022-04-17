@@ -1,23 +1,15 @@
 import enum
 import tokenize
 
-class NT():
-    PROGRAM = 'program'
-    DECL = 'DECL'
-    VAR_DECL = 'VAR_DECL'
-    FUNC_DECL = 'FUNC_DECL'
-    TYPE_SPEC = 'TYPE_SPEC'
-    VAR_DECL = 'VAR_DECL'
-    VAR_DECL_INIT = 'VAR_DECL_INIT'
-    VAR_DECL_ID = 'VAR_DECL_ID'
-    SIMPLE_EXPR = 'SIMPLE_EXPR'
-
 class Tokens(enum.Enum):
     IDENTIFIER = 'identifier'
+    VAR = 'var'
+    FUNC = 'func'
     COLON = ':'
     INT = 'int'
     BOOL = 'bool'
     CHAR = 'char'
+    RETURN = 'return'
     EQUAL_TO = '='
     L_SQR_BRACKET = '['
     R_SQR_BRACKET = ']'
@@ -27,18 +19,56 @@ class Tokens(enum.Enum):
     R_PAREN = ')'
     COMMA = ','
     SEMICOLON = ';'
+    INCREM = '++'
+    DECREM = '--'
 
 def create_tokens():
     tokens = []
     with open('m1.io', 'rb') as f:
         _tokens = tokenize.tokenize(f.readline)
+
+        # to find increment and decrement signs
+        prev_plus = False
+        prev_minus = False
+
         for t in _tokens:
             if t.type in (1, 54):
                 try:
-                    new_t = Tokens(t.string)
+                    if t.string == '+' and prev_plus:
+                        new_t = Tokens.INCREM
+                        prev_plus = False
+                    elif t.string == '+' and not prev_plus:
+                        prev_plus = True
+                        continue
+                    elif t.string == '-' and prev_minus:
+                        new_t = Tokens.DECREM
+                        prev_minus = False
+                    elif t.string == '-' and not prev_minus:
+                        prev_minus= True
+                        continue
+                    else:
+                        new_t = Tokens(t.string)
                 except ValueError:
                     new_t = Tokens.IDENTIFIER
                 tokens.append(new_t)
 
     return tokens
+
+def scan_token(tokens):
+    if tokens:
+        return tokens.pop(0)
+    return None
+
+def putback_token(tokens, t):
+    tokens.insert(0, t)
+    return tokens
+
+def expect_token(tokens, expect_t):
+    t = scan_token(tokens)
+    if t and t == expect_t:
+        putback_token(tokens, t)
+        return True
+    else:
+        putback_token(tokens, t)
+        return False
 

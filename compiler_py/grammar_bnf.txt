@@ -20,16 +20,3 @@ stmtList     :: stmt StmtList | 'E'
 returnStmt   :: 'return' ';' | 'return' exp ';'
 
 expr    :: ID '=' expr | 'ID' ++ | 'ID' --
-
-*********
-relExpr :: sumExpr
-sumExpr :: sumExpr sumOp mulExpr | mulExpr
-mulExpr :: mulExpr mulOp factor | factor
-sumOp   :: + | -
-mulOp   :: * | / | %
-
-immutable   :: ( expr ) | call | constant
-call        :: ID '(' args ')'
-args        :: argsList | E
-argsList    :: argsList , expr | expr
-constant    :: NUMCONST | CHARCONST | STRINGCONST
