@@ -116,8 +116,3 @@ def parser(tokens):
         return
     print('MSG: program successfully parsed')
     return
-
-tokens = [Tokens.VAR, Tokens.INT, Tokens.IDENTIFIER, Tokens.EQUAL_TO, Tokens.IDENTIFIER, Tokens.SEMICOLON]
-        
-parser(tokens)
-
