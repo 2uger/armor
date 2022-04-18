@@ -2,9 +2,9 @@ program   :: declList
 declList  :: decl declList | E
 decl      :: varDecl | funcDecl
 
-varDecl       :: 'var' typeSpec varDeclInit ';'
+varDecl       :: 'var' typeSpec varDeclId varDeclInit ';'
 typeSpec      :: 'int' | 'bool' | 'char'
-varDeclInit   :: varDeclId | varDeclId '=' 'ID'(TODO: simpleExpr)
+varDeclInit   :: '=' 'ID'(TODO: simpleExpr) | 'E'
 varDeclId     :: 'ID' 
 
 funcDecl     :: 'func' typeSpec ID '(' parms ')' stmt
