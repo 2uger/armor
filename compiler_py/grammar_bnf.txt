@@ -5,7 +5,7 @@ decl      :: varDecl | funcDecl
 varDecl       :: 'var' typeSpec varDeclInit ';'
 typeSpec      :: 'int' | 'bool' | 'char'
 varDeclInit   :: varDeclId | varDeclId '=' 'ID'
-varDeclId     :: ID | ID '[' NUMCONST ']'
+varDeclId     :: 'ID' 
 
 funcDecl     :: 'func' typeSpec ID '(' parms ')' stmt
 parms        :: parmList | 'E'
