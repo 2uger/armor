@@ -1,5 +1,6 @@
 from tokens import *
 
+
 class NT:
     END = 'end'
     PROGRAM = 'PROGRAM'
@@ -14,22 +15,45 @@ class NT:
     EXPR = 'EXPR'
     SIMPLE_EXPR = 'SIMPLE_EXPR'
 
-
-first_set = {
-    NT.PROGRAM: set([Tokens.VAR, Tokens.EMPTY]),
-    NT.DECL_LIST: set([Tokens.VAR, Tokens.EMPTY]),
-    NT.DECL: set([Tokens.VAR]),
-
-    NT.VAR_DECL: set([Tokens.VAR]),
-    NT.TYPE_SPEC: set([Tokens.INT, Tokens.CHAR, Tokens.BOOL]),
-    NT.VAR_DECL_INIT: set([Tokens.IDENTIFIER]),
-    NT.VAR_DECL_ID: set([Tokens.IDENTIFIER]),
-
-    NT.SIMPLE_EXPR: set([Tokens.IDENTIFIER]),
-    NT.EXPR: set([Tokens.IDENTIFIER]),
+parse_table = {
+    NT.PROGRAM: {
+        Tokens.VAR: 1,
+    },
+    NT.DECL_LIST: {
+        Tokens.VAR: 2,
+    },
+    NT.DECL: {
+        Tokens.VAR: 3,
+    },
+    NT.VAR_DECL: {
+        Tokens.VAR: 4,
+    },
+    NT.TYPE_SPEC: {
+        Tokens.INT: 5,
+        Tokens.CHAR: 6,
+    },
+    NT.VAR_DECL_INIT: {
+        Tokens.SEMICOLON: 7,
+        Tokens.EQUAL_TO: 8
+    },
+    NT.VAR_DECL_ID: {
+        Tokens.IDENTIFIER: 9,
+    },
 }
 
-tokens = []
+parse_rules = {
+    1: [NT.DECL_LIST],
+    2: [NT.DECL, NT.DECL_LIST],
+    3: [NT.VAR_DECL],
+
+    4: [Tokens.VAR, NT.TYPE_SPEC, NT.VAR_DECL_ID, NT.VAR_DECL_INIT, Tokens.SEMICOLON],
+    5: [Tokens.INT],
+    6: [Tokens.CHAR],
+    7: [],
+    8: [Tokens.EQUAL_TO, Tokens.IDENTIFIER],
+    9: [Tokens.IDENTIFIER],
+}
+
 
 class Stack:
     def __init__(self):
@@ -52,42 +76,6 @@ class Stack:
     def __repr__(self):
         return str(self.stack)
 
-parse_table = {
-    NT.PROGRAM: {
-        Tokens.VAR: 1,
-    },
-    NT.DECL_LIST: {
-        Tokens.VAR: 2,
-    },
-    NT.DECL: {
-        Tokens.VAR: 3,
-    },
-    NT.VAR_DECL: {
-        Tokens.VAR: 4,
-    },
-    NT.TYPE_SPEC: {
-        Tokens.INT: 5,
-        Tokens.CHAR: 6,
-    },
-    NT.VAR_DECL_INIT: {
-        Tokens.IDENTIFIER: 7,
-    },
-    NT.VAR_DECL_ID: {
-        Tokens.IDENTIFIER: 8,
-    },
-}
-
-parse_rules = {
-    1: [NT.DECL_LIST],
-    2: [NT.DECL, NT.DECL_LIST],
-    3: [NT.VAR_DECL],
-
-    4: [Tokens.VAR, NT.TYPE_SPEC, NT.VAR_DECL_INIT, Tokens.SEMICOLON],
-    5: [Tokens.INT],
-    6: [Tokens.CHAR],
-    7: [NT.VAR_DECL_ID, Tokens.EQUAL_TO, Tokens.IDENTIFIER],
-    8: [Tokens.IDENTIFIER],
-}
 
 def parser(tokens):
     stack = Stack()
@@ -115,6 +103,7 @@ def parser(tokens):
             print(f'ERROR: current token {token} and stack top element {stack.top_elem} does not match')
             return
         parse_rule_num = parse_table.get(stack.top_elem).get(token)
+        print(parse_rule_num)
         if parse_rule_num:
             parse_rule = parse_rules.get(parse_rule_num)
 
@@ -123,10 +112,12 @@ def parser(tokens):
             for s in parse_rule[::-1]:
                 stack.push(s)
             continue
+        print(f'ERROR: current token {token} does not match at all')
+        return
     print('MSG: program successfully parsed')
     return
 
-tokens = [Tokens.VAR, Tokens.INT, Tokens.IDENTIFIER, Tokens.EQUAL_TO, Tokens.IDENTIFIER]
+tokens = [Tokens.VAR, Tokens.INT, Tokens.IDENTIFIER, Tokens.EQUAL_TO, Tokens.IDENTIFIER, Tokens.SEMICOLON]
         
 parser(tokens)
 

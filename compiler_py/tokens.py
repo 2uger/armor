@@ -26,7 +26,7 @@ class Tokens(enum.Enum):
 
 def create_tokens():
     tokens = []
-    with open('m1.io', 'rb') as f:
+    with open('m2.io', 'rb') as f:
         _tokens = tokenize.tokenize(f.readline)
 
         # to find increment and decrement signs
@@ -34,7 +34,7 @@ def create_tokens():
         prev_minus = False
 
         for t in _tokens:
-            if t.type in (1, 54):
+            if t.type in (1, 2, 54):
                 try:
                     if t.string == '+' and prev_plus:
                         new_t = Tokens.INCREM
@@ -49,7 +49,10 @@ def create_tokens():
                         prev_minus= True
                         continue
                     else:
-                        new_t = Tokens(t.string)
+                        if t.type == 2:
+                            new_t = Tokens.NUMCONST
+                        else:
+                            new_t = Tokens(t.string)
                 except ValueError:
                     new_t = Tokens.IDENTIFIER
                 tokens.append(new_t)
