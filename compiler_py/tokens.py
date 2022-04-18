@@ -2,6 +2,7 @@ import enum
 import tokenize
 
 class Tokens(enum.Enum):
+    EMPTY = 'empty'
     IDENTIFIER = 'identifier'
     VAR = 'var'
     FUNC = 'func'
@@ -21,6 +22,7 @@ class Tokens(enum.Enum):
     SEMICOLON = ';'
     INCREM = '++'
     DECREM = '--'
+    NUMCONST = 'numconst'
 
 def create_tokens():
     tokens = []

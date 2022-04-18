@@ -1,4 +1,4 @@
-from parser import parse_program
+from recursive_descent_parser import parse_program
 from tokens import create_tokens
 
 
