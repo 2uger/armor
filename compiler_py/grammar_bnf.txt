@@ -4,7 +4,7 @@ decl      :: varDecl | funcDecl
 
 varDecl       :: 'var' typeSpec varDeclInit ';'
 typeSpec      :: 'int' | 'bool' | 'char'
-varDeclInit   :: varDeclId | varDeclId '=' simpleExpr
+varDeclInit   :: varDeclId | varDeclId '=' 'ID'
 varDeclId     :: ID | ID '[' NUMCONST ']'
 
 funcDecl     :: 'func' typeSpec ID '(' parms ')' stmt
