@@ -17,6 +17,9 @@ stmt         :: exprStmt | compoundStmt | returnStmt | 'E'
 exprStmt     :: expr ';' | ';'
 compoundStmt :: '{' stmtList '}'
 stmtList     :: stmt StmtList | 'E'
-returnStmt   :: 'return' ';' | 'return' exp ';'
+returnStmt   :: 'return' expr
 
-expr    :: ID '=' expr | 'ID' ++ | 'ID' --
+expr    :: 'ID' 
+exprN   :: '=' E | '++' | '--'
+E       :: E '+' T | T
+T       :: T '*' F | 'ID' | NUMCONST
