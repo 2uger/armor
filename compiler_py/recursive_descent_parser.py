@@ -1,7 +1,7 @@
 from tokens import *
 
 
-def parse_program(tokens):
+def parse(tokens):
     result = parse_decl_list(tokens)
     msg = f'MSG: successfully parse programm' if result else f'ERROR: error while parsing programm, check logs'
     print(msg)

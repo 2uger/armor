@@ -26,9 +26,9 @@ class Tokens(enum.Enum):
     DECREM = '--'
     NUMCONST = 'numconst'
 
-def create_tokens():
+def create_tokens(file_name):
     tokens = []
-    with open('m2.io', 'rb') as f:
+    with open(file_name, 'rb') as f:
         _tokens = tokenize.tokenize(f.readline)
 
         # to find increment and decrement signs

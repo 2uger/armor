@@ -186,7 +186,7 @@ class Stack:
         return str(self.stack)
 
 
-def parser(tokens):
+def parse(tokens):
     stack = Stack()
     stack.push(NT.END)
     stack.push(NT.PROGRAM)
