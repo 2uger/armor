@@ -20,6 +20,8 @@ class Tokens(enum.Enum):
     R_PAREN = ')'
     COMMA = ','
     SEMICOLON = ';'
+    PLUS = '+'
+    MUL = '*'
     INCREM = '++'
     DECREM = '--'
     NUMCONST = 'numconst'

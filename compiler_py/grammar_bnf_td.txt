@@ -15,11 +15,10 @@ parmType     :: typeSpec ID
 
 stmt         :: exprStmt | compoundStmt | returnStmt | 'E'
 exprStmt     :: expr ';' | ';'
-compoundStmt :: '{' stmtList '}'
+compoundStmt :: '{' stmtList '}' ';'
 stmtList     :: stmt StmtList | 'E'
-returnStmt   :: 'return' expr
+returnStmt   :: 'return' exprStmt
 
-expr    :: 'ID' 
-exprN   :: '=' E | '++' | '--'
-E       :: E '+' T | T
-T       :: T '*' F | 'ID' | NUMCONST
+expr    :: 'ID' exprN
+exprN   :: '=' operand | '++' | '--'
+operand :: 'ID' | NUMCONST

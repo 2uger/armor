@@ -25,6 +25,8 @@ class NT:
     RETURN_STMT = 'RETURN_STMT'
 
     EXPR = 'EXPR'
+    EXPR_N = 'EXPR_N'
+    OPERAND = 'OPERAND'
 
 
 parse_rules = {
@@ -57,17 +59,21 @@ parse_rules = {
               []],
     NT.EXPR_STMT: [[NT.EXPR, Tokens.SEMICOLON],
                    [Tokens.SEMICOLON]],
-    NT.COMPOUND_STMT: [[Tokens.L_SQR_BRCKT, NT.STMT_LIST, Tokens.R_SQR_BRCKT],
-                       []]
+    NT.COMPOUND_STMT: [[Tokens.L_CRL_BRCKT, NT.STMT_LIST, Tokens.R_CRL_BRCKT, Tokens.SEMICOLON],
+                       []],
     NT.STMT_LIST: [[NT.STMT, NT.STMT_LIST],
-                   []]
-    NT.RETURN_STMT: [[Tokens.RETURN, Tokens.SEMICOLON],
-                     [Tokens.RETURN, NT.EXPR, Tokens.SEMICOLON]]
+                   []],
+    NT.RETURN_STMT: [[Tokens.RETURN, NT.EXPR_STMT]],
 
     
-    NT.EXPR: [[Tokens.IDENTIFIER, Tokens.EQUAL_TO, NT.EXPR],
-              [Tokens.IDENTIFIER, Tokens.INCREM],
-              [Tokens.IDENTIFIER, Tokens.DECREM]]
+    NT.EXPR: [[Tokens.IDENTIFIER, NT.EXPR_N]],
+    NT.EXPR_N: [[Tokens.EQUAL_TO, NT.OPERAND],
+                [Tokens.INCREM],
+                [Tokens.DECREM],
+                []],
+    NT.OPERAND: [[Tokens.IDENTIFIER],
+                [Tokens.NUMCONST]],
+
 }
 
 
@@ -84,6 +90,7 @@ parse_table = {
         Tokens.VAR: parse_rules[NT.DECL][0],
         Tokens.FUNC: parse_rules[NT.DECL][1],
     },
+
     # Variable declaration
     NT.VAR_DECL: {
         Tokens.VAR: parse_rules[NT.VAR_DECL][0],
@@ -99,6 +106,7 @@ parse_table = {
     NT.VAR_DECL_ID: {
         Tokens.IDENTIFIER: parse_rules[NT.VAR_DECL_ID][0],
     },
+
     # Function declaration
     NT.FUNC_DECL: {
         Tokens.FUNC: parse_rules[NT.FUNC_DECL][0],
@@ -122,7 +130,38 @@ parse_table = {
     },
     NT.STMT: {
         Tokens.IDENTIFIER: parse_rules[NT.STMT][0],
-    }
+        Tokens.L_CRL_BRCKT: parse_rules[NT.STMT][1],
+        Tokens.RETURN: parse_rules[NT.STMT][2],
+    },
+    NT.EXPR_STMT: {
+        Tokens.IDENTIFIER: parse_rules[NT.EXPR_STMT][0],
+        Tokens.SEMICOLON: parse_rules[NT.EXPR_STMT][1],
+    },
+    NT.COMPOUND_STMT: {
+        Tokens.L_CRL_BRCKT: parse_rules[NT.COMPOUND_STMT][0],
+    },
+    NT.STMT_LIST: {
+        Tokens.IDENTIFIER: parse_rules[NT.STMT_LIST][0],
+        Tokens.L_CRL_BRCKT: parse_rules[NT.STMT_LIST][0],
+        Tokens.RETURN: parse_rules[NT.STMT_LIST][0],
+        Tokens.R_CRL_BRCKT: parse_rules[NT.STMT_LIST][1],
+    },
+    NT.RETURN_STMT: {
+        Tokens.RETURN: parse_rules[NT.RETURN_STMT][0],
+    },
+    NT.EXPR: {
+        Tokens.IDENTIFIER: parse_rules[NT.EXPR][0],
+    },
+    NT.EXPR_N: {
+        Tokens.EQUAL_TO: parse_rules[NT.EXPR_N][0],
+        Tokens.INCREM: parse_rules[NT.EXPR_N][1],
+        Tokens.DECREM: parse_rules[NT.EXPR_N][2],
+        Tokens.SEMICOLON: parse_rules[NT.EXPR_N][3],
+    },
+    NT.OPERAND: {
+        Tokens.IDENTIFIER: parse_rules[NT.OPERAND][0],
+        Tokens.NUMCONST: parse_rules[NT.OPERAND][1],
+    },
 }
 
 class Stack:
@@ -173,10 +212,7 @@ def parser(tokens):
             print(f'ERROR: current token {token} and stack top element {stack.top_elem} does not match')
             print(f'Current tokens: {tokens}\nCurrent stack: {stack}')
             return
-        print(stack.top_elem)
-        print(token)
         parse_rule = parse_table.get(stack.top_elem, {}).get(token)
-        print(parse_rule)
         if parse_rule is not None:
             stack.pop()
 
