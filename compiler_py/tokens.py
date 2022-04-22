@@ -1,6 +1,7 @@
 import enum
 import tokenize
 
+
 class Tokens(enum.Enum):
     EMPTY = 'empty'
     IDENTIFIER = 'identifier'
@@ -25,6 +26,7 @@ class Tokens(enum.Enum):
     INCREM = '++'
     DECREM = '--'
     NUMCONST = 'numconst'
+
 
 def create_tokens(file_name):
     tokens = []
@@ -61,14 +63,17 @@ def create_tokens(file_name):
 
     return tokens
 
+
 def scan_token(tokens):
     if tokens:
         return tokens.pop(0)
     return None
 
+
 def putback_token(tokens, t):
     tokens.insert(0, t)
     return tokens
+
 
 def expect_token(tokens, expect_t):
     t = scan_token(tokens)
@@ -78,6 +83,7 @@ def expect_token(tokens, expect_t):
     else:
         putback_token(tokens, t)
         return False
+
 
 def expect_tokens(tokens, expect_ts):
     t = scan_token(tokens)

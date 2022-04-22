@@ -138,4 +138,3 @@ def parse_return_stmt(tokens):
 def parse_identifier(tokens):
     t = scan_token(tokens)
     return t == Tokens.IDENTIFIER
-

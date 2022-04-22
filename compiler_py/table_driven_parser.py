@@ -164,6 +164,7 @@ parse_table = {
     },
 }
 
+
 class Stack:
     def __init__(self):
         self.stack = []
@@ -199,6 +200,7 @@ def parse(tokens):
     while stack:
         if stack.top_elem == NT.END:
             break
+
         if stack.top_elem == token:
             stack.pop()
 
@@ -206,12 +208,13 @@ def parse(tokens):
             if not token:
                 print('MSG: input of tokens is empty')
                 break
-
             continue
+
         if type(stack.top_elem) == Tokens and token != stack.top_elem:
             print(f'ERROR: current token {token} and stack top element {stack.top_elem} does not match')
             print(f'Current tokens: {tokens}\nCurrent stack: {stack}')
             return
+
         parse_rule = parse_table.get(stack.top_elem, {}).get(token)
         if parse_rule is not None:
             stack.pop()
