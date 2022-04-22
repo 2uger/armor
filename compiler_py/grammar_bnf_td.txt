@@ -9,8 +9,8 @@ varDeclId     :: 'ID'
 
 funcDecl     :: 'func' typeSpec ID '(' parms ')' stmt
 parms        :: parmList | 'E'
-parmList     :: parmType parmListN
-parmListN    :: 'E' | ',' parmType parmListN
+parmsList    :: parmType parmsListN
+parmsListN   :: 'E' | ',' parmType parmsListN
 parmType     :: typeSpec ID
 
 stmt         :: exprStmt | compoundStmt | returnStmt | 'E'

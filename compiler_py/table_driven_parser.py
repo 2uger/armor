@@ -12,48 +12,114 @@ class NT:
     VAR_DECL_INIT = 'VAR_DECL_INIT'
     VAR_DECL_ID = 'VAR_DECL_ID'
 
+    FUNC_DECL = 'FUNC_DECL'
+    PARMS = 'PARMS'
+    PARMS_LIST = 'PARMS_LIST'
+    PARMS_LIST_N = 'PARMS_LIST_N'
+    PARM_TYPE = 'PARM_TYPE'
+
+    STMT = 'STMT'
+    EXPR_STMT = 'EXPR_STMT'
+    COMPOUND_STMT = 'COMPOUND_STMT'
+    STMT_LIST = 'STMT_LIST'
+    RETURN_STMT = 'RETURN_STMT'
+
     EXPR = 'EXPR'
-    SIMPLE_EXPR = 'SIMPLE_EXPR'
+
+
+parse_rules = {
+    NT.PROGRAM: [[NT.DECL_LIST]],
+    NT.DECL_LIST: [[NT.DECL, NT.DECL_LIST]],
+    NT.DECL: [[NT.VAR_DECL],
+              [NT.FUNC_DECL]],
+
+
+    NT.VAR_DECL: [[Tokens.VAR, NT.TYPE_SPEC, NT.VAR_DECL_ID, NT.VAR_DECL_INIT, Tokens.SEMICOLON]],
+    NT.TYPE_SPEC: [[Tokens.INT],
+                   [Tokens.CHAR]],
+    NT.VAR_DECL_INIT: [[Tokens.EQUAL_TO, Tokens.IDENTIFIER],
+                       []],
+    NT.VAR_DECL_ID: [[Tokens.IDENTIFIER]],
+
+
+    NT.FUNC_DECL: [[Tokens.FUNC, NT.TYPE_SPEC, Tokens.IDENTIFIER, Tokens.L_PAREN, NT.PARMS, Tokens.R_PAREN, NT.STMT]],
+    NT.PARMS: [[NT.PARMS_LIST],
+               []],
+    NT.PARMS_LIST: [[NT.PARM_TYPE, NT.PARMS_LIST_N]],
+    NT.PARMS_LIST_N: [[Tokens.COMMA, NT.PARM_TYPE, NT.PARMS_LIST_N],
+                      []],
+    NT.PARM_TYPE: [[NT.TYPE_SPEC, Tokens.IDENTIFIER]],
+
+
+    NT.STMT: [[NT.EXPR_STMT],
+              [NT.COMPOUND_STMT],
+              [NT.RETURN_STMT],
+              []],
+    NT.EXPR_STMT: [[NT.EXPR, Tokens.SEMICOLON],
+                   [Tokens.SEMICOLON]],
+    NT.COMPOUND_STMT: [[Tokens.L_SQR_BRCKT, NT.STMT_LIST, Tokens.R_SQR_BRCKT],
+                       []]
+    NT.STMT_LIST: [[NT.STMT, NT.STMT_LIST],
+                   []]
+    NT.RETURN_STMT: [[Tokens.RETURN, Tokens.SEMICOLON],
+                     [Tokens.RETURN, NT.EXPR, Tokens.SEMICOLON]]
+
+}
+
 
 parse_table = {
     NT.PROGRAM: {
-        Tokens.VAR: 1,
+        Tokens.VAR: parse_rules[NT.PROGRAM][0],
+        Tokens.FUNC: parse_rules[NT.PROGRAM][0],
     },
     NT.DECL_LIST: {
-        Tokens.VAR: 2,
+        Tokens.VAR: parse_rules[NT.DECL_LIST][0],
+        Tokens.FUNC: parse_rules[NT.DECL_LIST][0],
     },
     NT.DECL: {
-        Tokens.VAR: 3,
+        Tokens.VAR: parse_rules[NT.DECL][0],
+        Tokens.FUNC: parse_rules[NT.DECL][1],
     },
+    # Variable declaration
     NT.VAR_DECL: {
-        Tokens.VAR: 4,
+        Tokens.VAR: parse_rules[NT.VAR_DECL][0],
     },
     NT.TYPE_SPEC: {
-        Tokens.INT: 5,
-        Tokens.CHAR: 6,
+        Tokens.INT: parse_rules[NT.TYPE_SPEC][0],
+        Tokens.CHAR: parse_rules[NT.TYPE_SPEC][1],
     },
     NT.VAR_DECL_INIT: {
-        Tokens.SEMICOLON: 7,
-        Tokens.EQUAL_TO: 8
+        Tokens.EQUAL_TO: parse_rules[NT.VAR_DECL_INIT][0],
+        Tokens.SEMICOLON: parse_rules[NT.VAR_DECL_INIT][1],
     },
     NT.VAR_DECL_ID: {
-        Tokens.IDENTIFIER: 9,
+        Tokens.IDENTIFIER: parse_rules[NT.VAR_DECL_ID][0],
     },
+    # Function declaration
+    NT.FUNC_DECL: {
+        Tokens.FUNC: parse_rules[NT.FUNC_DECL][0],
+    },
+    NT.PARMS: {
+        Tokens.INT: parse_rules[NT.PARMS][0],
+        Tokens.CHAR: parse_rules[NT.PARMS][0],
+        Tokens.R_PAREN: parse_rules[NT.PARMS][1],
+    },
+    NT.PARMS_LIST: {
+        Tokens.INT: parse_rules[NT.PARMS_LIST][0],
+        Tokens.CHAR: parse_rules[NT.PARMS_LIST][0],
+    },
+    NT.PARMS_LIST_N: {
+        Tokens.COMMA: parse_rules[NT.PARMS_LIST_N][0],
+        Tokens.R_PAREN: parse_rules[NT.PARMS_LIST_N][1],
+    },
+    NT.PARM_TYPE: {
+        Tokens.INT: parse_rules[NT.PARM_TYPE][0],
+        Tokens.CHAR: parse_rules[NT.PARM_TYPE][0],
+    },
+    NT.STMT: {
+        Tokens.IDENTIFIER: parse_rules[NT.STMT][0],
+    }
 }
-
-parse_rules = {
-    1: [NT.DECL_LIST],
-    2: [NT.DECL, NT.DECL_LIST],
-    3: [NT.VAR_DECL],
-
-    4: [Tokens.VAR, NT.TYPE_SPEC, NT.VAR_DECL_ID, NT.VAR_DECL_INIT, Tokens.SEMICOLON],
-    5: [Tokens.INT],
-    6: [Tokens.CHAR],
-    7: [],
-    8: [Tokens.EQUAL_TO, Tokens.IDENTIFIER],
-    9: [Tokens.IDENTIFIER],
-}
-
 
 class Stack:
     def __init__(self):
@@ -101,18 +167,20 @@ def parser(tokens):
             continue
         if type(stack.top_elem) == Tokens and token != stack.top_elem:
             print(f'ERROR: current token {token} and stack top element {stack.top_elem} does not match')
+            print(f'Current tokens: {tokens}\nCurrent stack: {stack}')
             return
-        parse_rule_num = parse_table.get(stack.top_elem).get(token)
-        print(parse_rule_num)
-        if parse_rule_num:
-            parse_rule = parse_rules.get(parse_rule_num)
-
+        print(stack.top_elem)
+        print(token)
+        parse_rule = parse_table.get(stack.top_elem, {}).get(token)
+        print(parse_rule)
+        if parse_rule is not None:
             stack.pop()
 
             for s in parse_rule[::-1]:
                 stack.push(s)
             continue
         print(f'ERROR: current token {token} does not match at all')
+        print(f'Current tokens: {tokens}\nCurrent stack: {stack}')
         return
     print('MSG: program successfully parsed')
     return

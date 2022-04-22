@@ -1,1 +1,2 @@
-var int mmm = ident;
+ var int mmm = ident;
+ func char function(int m)
