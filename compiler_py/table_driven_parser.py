@@ -64,6 +64,10 @@ parse_rules = {
     NT.RETURN_STMT: [[Tokens.RETURN, Tokens.SEMICOLON],
                      [Tokens.RETURN, NT.EXPR, Tokens.SEMICOLON]]
 
+    
+    NT.EXPR: [[Tokens.IDENTIFIER, Tokens.EQUAL_TO, NT.EXPR],
+              [Tokens.IDENTIFIER, Tokens.INCREM],
+              [Tokens.IDENTIFIER, Tokens.DECREM]]
 }
 
 
