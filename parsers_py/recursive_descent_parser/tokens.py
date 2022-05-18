@@ -2,30 +2,44 @@ import enum
 import tokenize
 
 
-class Tokens(enum.Enum):
+class Token:
+    def __init__(self, kind, content=''):
+        self.kind = kind
+        self.content = content if content else kind
+
+    def __repr__(self):
+        return f'Token: {self.kind}'
+
+    def __eq__(self, t):
+        return self.kind == t
+
+
+class TokenKind(enum.Enum):
+    END = '$'
     EMPTY = 'empty'
     IDENTIFIER = 'identifier'
-    VAR = 'var'
-    FUNC = 'func'
-    COLON = ':'
+    NUMCONST = 'numconst'
+    KEYWORD = 'keyword'
+    SYMBOL = 'symbol'
+
     INT = 'int'
     BOOL = 'bool'
-    CHAR = 'char'
     RETURN = 'return'
-    EQUAL_TO = '='
-    L_SQR_BRACKET = '['
-    R_SQR_BRACKET = ']'
+
+    COLON = ':'
+    SEMICOLON = ';'
+
+    L_SQR_BRCKT = '['
+    R_SQR_BRCKT = ']'
     L_CRL_BRCKT = '{'
     R_CRL_BRCKT = '}'
     L_PAREN = '('
     R_PAREN = ')'
+
     COMMA = ','
-    SEMICOLON = ';'
+    EQUAL_TO = '='
     PLUS = '+'
     MUL = '*'
-    INCREM = '++'
-    DECREM = '--'
-    NUMCONST = 'numconst'
 
 
 def create_tokens(file_name):
@@ -33,33 +47,21 @@ def create_tokens(file_name):
     with open(file_name, 'rb') as f:
         _tokens = tokenize.tokenize(f.readline)
 
-        # to find increment and decrement signs
-        prev_plus = False
-        prev_minus = False
+        if _tokens is None:
+            return
 
         for t in _tokens:
             if t.type in (1, 2, 54):
                 try:
-                    if t.string == '+' and prev_plus:
-                        new_t = Tokens.INCREM
-                        prev_plus = False
-                    elif t.string == '+' and not prev_plus:
-                        prev_plus = True
-                        continue
-                    elif t.string == '-' and prev_minus:
-                        new_t = Tokens.DECREM
-                        prev_minus = False
-                    elif t.string == '-' and not prev_minus:
-                        prev_minus= True
-                        continue
+                    if t.type == 2:
+                        n_t = Token(TokenKind.NUMCONST, int(t.string))
                     else:
-                        if t.type == 2:
-                            new_t = Tokens.NUMCONST
-                        else:
-                            new_t = Tokens(t.string)
+                        t_kind = TokenKind(t.string)
+                        n_t = Token(t_kind)
                 except ValueError:
-                    new_t = Tokens.IDENTIFIER
-                tokens.append(new_t)
+                    n_t = Token(TokenKind.IDENTIFIER, t.string)
+                tokens.append(n_t)
+        tokens.append(Token(TokenKind.END))
 
     return tokens
 
