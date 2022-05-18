@@ -1,11 +1,12 @@
 import enum
 import tokenize
 
+tokens = []
 
 class Token:
     def __init__(self, kind, content=''):
         self.kind = kind
-        self.content = content if content else kind
+        self.content = content
 
     def __repr__(self):
         return f'Token: {self.kind}'
@@ -43,12 +44,12 @@ class TokenKind(enum.Enum):
 
 
 def create_tokens(file_name):
-    tokens = []
+    global tokens
     with open(file_name, 'rb') as f:
         _tokens = tokenize.tokenize(f.readline)
 
         if _tokens is None:
-            return
+            return False
 
         for t in _tokens:
             if t.type in (1, 2, 54):
@@ -63,35 +64,18 @@ def create_tokens(file_name):
                 tokens.append(n_t)
         tokens.append(Token(TokenKind.END))
 
-    return tokens
+    return True
 
 
-def scan_token(tokens):
-    if tokens:
-        return tokens.pop(0)
-    return None
+def token_is(index, kind):
+    return len(tokens) > index and tokens[index].kind == kind
 
+def token_in(index, kinds):
+    return len(tokens) > index and tokens[index].kind in kinds
 
-def putback_token(tokens, t):
-    tokens.insert(0, t)
-    return tokens
-
-
-def expect_token(tokens, expect_t):
-    t = scan_token(tokens)
-    if t and t == expect_t:
-        putback_token(tokens, t)
-        return True
+def match_token(index, kind):
+    if token_is(index, kind):
+        return index + 1
     else:
-        putback_token(tokens, t)
-        return False
-
-
-def expect_tokens(tokens, expect_ts):
-    t = scan_token(tokens)
-    if t and t in expect_ts:
-        putback_token(tokens, t)
-        return True
-    else:
-        putback_token(tokens, t)
-        return False
+        raise Exception(f'Error matching token: {kind}')
+    
