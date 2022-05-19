@@ -1,6 +1,6 @@
 import sys
 
-from tokens import create_tokens
+from tokens import create_tokens, tokens
 from recursive_descent_parser import parse, messages
 
 
@@ -10,10 +10,10 @@ def main():
     else:
         print('Provide file name');
         return
-    tokens = create_tokens(file_name)
+    create_tokens(file_name)
     for t in tokens:
         print(t)
-    parse(tokens)
+    parse(0)
     print(messages)
 
 if __name__ == '__main__':

@@ -3,26 +3,30 @@ from tokens import *
 messages = []
 
 def parse(index):
-    result = parse_decl_list(index)
-    messages.append(f'MSG: successfully parse programm' if result else f'ERROR: error while parsing programm, check logs')
+    node, index = parse_decl_list(index)
+    messages.append(f'MSG: successfully parse programm' if node else f'ERROR: error while parsing programm, check logs')
+    
+    return node
 
 def parse_decl_list(index):
     decl_list = []
     while 1:
-        print(tokens)
-        if token_is(index, TokenKind.END)
+        if token_is(index, TokenKind.END):
             messages.append('Successfull parsing')
             return decl_list
         else:
-            node = parse_decl(index)
+            node, index = parse_decl(index)
             decl_list.append(node)
-    
+            if index == len(tokens) - 1:
+                break
+
+    return decl_list, index
 
 def parse_decl(index):
-    token_is(index, TokenKind.INT)
-    token_is(index+1, TokenKind.IDENITIFIER)
+    match_token(index, TokenKind.INT)
+    match_token(index+1, TokenKind.IDENTIFIER)
 
-    if token_in(index+2, (TokenKind.EQUAL_TO, TokenKind.SEMICOLON))
+    if token_in(index+2, (TokenKind.EQUAL_TO, TokenKind.SEMICOLON)):
         print('Var')
         return parse_var_decl(index)
     else:
@@ -35,52 +39,70 @@ def parse_var_decl(index):
     var_name, index = parse_identifier(index)
     assignment = None
 
-    if token_is(TokenKind.EQUAL_TO):
-        assignment, index = parse_assignment(index)
+    if token_is(index, TokenKind.EQUAL_TO):
+        match_token(index, TokenKind.EQUAL_TO)
+        assignment, index = parse_assignment(index+1)
 
-    return node.VarDecl(var_type, var_id, assignment), index
+    index = match_token(index, TokenKind.SEMICOLON)
+
+    return (var_type, var_name, assignment), index
 
 def parse_assignment(index):
-    index = match_token(TokenKind,NUMCONST)
-    return node.Expression(), index
+    t = tokens[index]
+    index = match_token(index, TokenKind.NUMCONST)
+    return (t,), index
 
 # Func declaration parsing
 def parse_func_decl(index):
-    return parse_type_spec(tokens) \
-           and scan_token(tokens) == TokenKind.IDENTIFIER \
-           and scan_token(tokens) == TokenKind.L_PAREN \
-           and parse_parms(tokens) \
-           and scan_token(tokens) == TokenKind.R_PAREN \
-           and scan_token(tokens) == TokenKind.SEMICOLON
+    func_type, index = parse_type_spec(index)
+    func_name, index = parse_identifier(index)
+
+    index = match_token(index, TokenKind.L_PAREN)
+    parms, index = parse_parms(index)
+    index = match_token(index, TokenKind.R_PAREN)
+
+    index = match_token(index, TokenKind.SEMICOLON)
+
+    return [func_type, func_name, parms], index
 
 def parse_type_spec(index):
-    t = scan_token(tokens)
-    if t in (TokenKind.INT,):
-        return True
-    else:
-        putback_token(tokens, t)
-        messages.append(f'ERROR: bad type spec {t}')
-        return False
+    t = tokens[index]
+    index = match_token(index, TokenKind.INT)
+    return t, index
 
-def parse_parms(tokens):
-    if expect_tokens(tokens, [TokenKind.INT]):
-        return parse_parms_list(tokens)
-    else:
-        return True
+def parse_parms(index):
+    parms = []
 
-def parse_parms_list(index):
-    return parse_parm_type(tokens) and parse_parm_list_prime(tokens)
+    if token_is(index, TokenKind.R_PAREN):
+        return parms, index
+    
+    while True:
+        parm_type, index = parse_type_spec(index)
+        parm_name, index = parse_identifier(index)
 
-def parse_parm_type(index):
-    return parse_type_spec(tokens) and parse_identifier(tokens)
+        parms.append([parm_type, parm_name])
 
-def parse_parm_list_prime(index):
-    t = scan_token(tokens)
-    if t == TokenKind.COMMA:
-        return parse_parm_type(tokens) and parse_parm_list_prime(tokens)
-    else:
-        putback_token(tokens, t)
-        return True
+        if token_is(index, TokenKind.COMMA):
+            match_token(index, TokenKind.COMMA)
+            index += 1
+        else:
+            break
+    
+    return parms, index
+
+#def parse_parms_list(index):
+#    return parse_parm_type(tokens) and parse_parm_list_prime(tokens)
+#
+#def parse_parm_type(index):
+#    return parse_type_spec(tokens) and parse_identifier(tokens)
+#
+#def parse_parm_list_prime(index):
+#    t = scan_token(tokens)
+#    if t == TokenKind.COMMA:
+#        return parse_parm_type(tokens) and parse_parm_list_prime(tokens)
+#    else:
+#        putback_token(tokens, t)
+#        return True
 
 
 #def parse_stmt(tokens):
@@ -131,5 +153,5 @@ def parse_parm_list_prime(index):
 #
 def parse_identifier(index):
     t = tokens[index]
-    index = match_token(TokenKind.IDENTIFIER)
-    return t.content, index
+    index = match_token(index, TokenKind.IDENTIFIER)
+    return t, index

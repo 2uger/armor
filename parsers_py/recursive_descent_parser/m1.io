@@ -1,1 +1,3 @@
-int m(int m, int hh);
+int m = 2;
+int m = 2;
+int function(int m, int kkjlk);

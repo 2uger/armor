@@ -1,0 +1,1 @@
+1. Store number of line in every token, so when error occure, u can show whole line

@@ -67,7 +67,7 @@ def create_tokens(file_name):
     return True
 
 
-def token_is(index, kind):
+def token_is(index, kind, raise_err=False):
     return len(tokens) > index and tokens[index].kind == kind
 
 def token_in(index, kinds):
@@ -77,5 +77,5 @@ def match_token(index, kind):
     if token_is(index, kind):
         return index + 1
     else:
-        raise Exception(f'Error matching token: {kind}')
+        raise Exception(f'Error matching token: {kind}, current token: {tokens[index]}')
     
