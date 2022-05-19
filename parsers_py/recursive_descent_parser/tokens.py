@@ -14,7 +14,6 @@ class Token:
     def __eq__(self, t):
         return self.kind == t
 
-
 class TokenKind(enum.Enum):
     END = '$'
     EMPTY = 'empty'
@@ -44,7 +43,6 @@ class TokenKind(enum.Enum):
     PLUS = '+'
     MUL = '*'
 
-
 def create_tokens(file_name):
     global tokens
     with open(file_name, 'rb') as f:
@@ -68,8 +66,7 @@ def create_tokens(file_name):
 
     return True
 
-
-def token_is(index, kind, raise_err=False):
+def token_is(index, kind):
     return len(tokens) > index and tokens[index].kind == kind
 
 def token_in(index, kinds):
