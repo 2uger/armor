@@ -58,13 +58,10 @@ def parse_assignment(index):
 def parse_func_decl(index):
     func_type, index = parse_type_spec(index)
     func_name, index = parse_identifier(index)
-
     index = match_token(index, TokenKind.L_PAREN)
     parms, index = parse_parms(index)
     index = match_token(index, TokenKind.R_PAREN)
-
     stmts, index = parse_compound_stmt(index)
-
     index = match_token(index, TokenKind.SEMICOLON)
 
     return [func_type, func_name, parms, stmts], index
@@ -76,14 +73,12 @@ def parse_type_spec(index):
 
 def parse_parms(index):
     parms = []
-
     if token_is(index, TokenKind.R_PAREN):
         return parms, index
     
     while True:
         parm_type, index = parse_type_spec(index)
         parm_name, index = parse_identifier(index)
-
         parms.append([parm_type, parm_name])
 
         if token_is(index, TokenKind.COMMA):
@@ -105,7 +100,6 @@ def parse_statements(index):
 
 def parse_compound_stmt(index):
     stmts = []
-
     index = match_token(index, TokenKind.L_CRL_BRCKT)
 
     while True:
@@ -128,11 +122,9 @@ def parse_return(index):
 
 def parse_if_statement(index):
     index = match_token(index, TokenKind.IF)
-
     index = match_token(index, TokenKind.L_PAREN)
     if_cond, index = parse_expression(index)
     index = match_token(index, TokenKind.R_PAREN)
-
     if_stmt, index = parse_compound_stmt(index)
 
     if not token_is(index, TokenKind.ELSE):
