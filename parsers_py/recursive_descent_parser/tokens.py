@@ -26,6 +26,8 @@ class TokenKind(enum.Enum):
     INT = 'int'
     BOOL = 'bool'
     RETURN = 'return'
+    IF = 'if'
+    ELSE = 'else'
 
     COLON = ':'
     SEMICOLON = ';'
