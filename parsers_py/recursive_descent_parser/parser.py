@@ -9,18 +9,18 @@ def parse(index):
     return node
 
 def parse_decl_list(index):
-    decl_list = []
+    items = []
     while 1:
         if token_is(index, TokenKind.END):
             messages.append('Successfull parsing')
-            return decl_list
+            return items
         else:
             node, index = parse_decl(index)
-            decl_list.append(node)
+            items.append(node)
             if index == len(tokens) - 1:
                 break
 
-    return decl_list, index
+    return items, index
 
 def parse_decl(index):
     match_token(index, TokenKind.INT)
@@ -28,13 +28,13 @@ def parse_decl(index):
 
     if token_in(index+2, (TokenKind.EQUAL_TO, TokenKind.SEMICOLON)):
         print('Var')
-        return parse_var_decl(index)
+        return parse_decl(index)
     else:
         print('Func')
-        return parse_func_decl(index)
+        return parse_func_definition(index)
 
 # Var declaration parsing
-def parse_var_decl(index):
+def parse_decl(index):
     var_type, index = parse_type_spec(index)
     var_name, index = parse_identifier(index)
     assignment = None
@@ -49,7 +49,7 @@ def parse_var_decl(index):
     return (var_type, var_name, assignment), index
 
 # Func declaration parsing
-def parse_func_decl(index):
+def parse_func_definition(index):
     func_type, index = parse_type_spec(index)
     func_name, index = parse_identifier(index)
     index = match_token(index, TokenKind.L_PAREN)
@@ -148,7 +148,6 @@ def parse_assignment(index):
     l, index = parse_primary(index)
 
     op = tokens[index]
-    kind = tokens[index]
     
     node_types = {
         TokenKind.PLUS: TokenKind.PLUS,
