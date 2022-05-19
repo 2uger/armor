@@ -41,7 +41,9 @@ class TokenKind(enum.Enum):
     COMMA = ','
     EQUAL_TO = '='
     PLUS = '+'
+    MINUS = '-'
     MUL = '*'
+    DIV = '/'
 
 def create_tokens(file_name):
     global tokens

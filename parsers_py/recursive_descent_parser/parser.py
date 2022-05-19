@@ -48,12 +48,6 @@ def parse_var_decl(index):
 
     return (var_type, var_name, assignment), index
 
-def parse_assignment(index):
-    l, index = parse_identifier(index)
-    index = match_token(index, TokenKind.PLUS)
-    r, index = parse_identifier(index)
-    return (l, TokenKind.PLUS, r), index
-
 # Func declaration parsing
 def parse_func_decl(index):
     func_type, index = parse_type_spec(index)
@@ -142,11 +136,46 @@ def parse_expression_stmt(index):
 
     return node, index
 
-def parse_expression(index):
-    node, index = parse_assignment(index)
-    return node, index
-
 def parse_identifier(index):
     t = tokens[index]
     index = match_token(index, TokenKind.IDENTIFIER)
     return t, index
+
+#######
+####### Parsers for expressions
+#######
+def parse_assignment(index):
+    l, index = parse_primary(index)
+
+    op = tokens[index]
+    kind = tokens[index]
+    
+    node_types = {
+        TokenKind.PLUS: TokenKind.PLUS,
+        TokenKind.MINUS: TokenKind.MINUS,
+        TokenKind.MUL: TokenKind.MUL,
+        TokenKind.DIV: TokenKind.DIV,
+        TokenKind.EQUAL_TO: TokenKind.EQUAL_TO
+    }
+
+    if op.kind in node_types:
+        r, index = parse_assignment(index+1)
+        return [l, op, r], index
+    else:
+        return l, index
+
+def parse_expression(index):
+    node, index = parse_assignment(index)
+    return node, index
+
+def parse_conditional(index):
+    return parse_primary(index)
+
+def parse_primary(index):
+    if token_is(index, TokenKind.NUMCONST):
+        t = tokens[index]
+        return t.content, index + 1 
+    elif token_is(index, TokenKind.IDENTIFIER):
+        t = tokens[index]
+        return t.content, index + 1
+
