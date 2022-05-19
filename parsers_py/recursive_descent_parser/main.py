@@ -1,6 +1,6 @@
 import sys
 
-from recursive_descent_parser import parse
+from parser import parse
 from tokens import create_tokens, tokens
 
 

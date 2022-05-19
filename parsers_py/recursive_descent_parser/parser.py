@@ -94,7 +94,6 @@ def parse_statements(index):
         try:
             return f(index)
         except Exception:
-            print('Ruined on parse statements')
             continue
     return parse_expression_stmt(index)
 
