@@ -1,4 +1,5 @@
 from tokens import *
+import ast as node
 
 messages = []
 
@@ -28,37 +29,44 @@ def parse_decl(index):
 
     if token_in(index+2, (TokenKind.EQUAL_TO, TokenKind.SEMICOLON)):
         print('Var')
-        return parse_decl(index)
+        return parse_var_decl(index)
     else:
         print('Func')
         return parse_func_definition(index)
 
-# Var declaration parsing
-def parse_decl(index):
-    var_type, index = parse_type_spec(index)
-    var_name, index = parse_identifier(index)
-    assignment = None
+def parse_var_decl(index):
+    spec, index = parse_type_spec(index)
+    decl, index = parse_identifier(index)
 
     if token_is(index, TokenKind.EQUAL_TO):
-        assignment, index = parse_assignment(index+1)
+        init, index = parse_assignment(index+1)
     else:
-        assignment = None
+        init = None
 
     index = match_token(index, TokenKind.SEMICOLON)
 
-    return (var_type, var_name, assignment), index
+    return node.Declaration(node.Root(spec, decl, init)), index
 
-# Func declaration parsing
+# Function definition parser
 def parse_func_definition(index):
-    func_type, index = parse_type_spec(index)
-    func_name, index = parse_identifier(index)
+    spec, index = parse_type_spec(index)
+    decl, index = parse_func_declarator(index)
+
+    body, index = parse_compound_stmt(index)
+    index = match_token(index, TokenKind.SEMICOLON)
+
+    root = node.Root(spec, decl)
+
+    return node.Declaration(root, body), index
+
+def parse_func_declarator(index):
+    identifier, index = parse_identifier(index)
+
     index = match_token(index, TokenKind.L_PAREN)
     parms, index = parse_parms(index)
     index = match_token(index, TokenKind.R_PAREN)
-    stmts, index = parse_compound_stmt(index)
-    index = match_token(index, TokenKind.SEMICOLON)
 
-    return [func_type, func_name, parms, stmts], index
+    return node.Function(identifier, parms), index
 
 def parse_type_spec(index):
     t = tokens[index]
@@ -66,14 +74,14 @@ def parse_type_spec(index):
     return t, index
 
 def parse_parms(index):
-    parms = []
+    items = []
     if token_is(index, TokenKind.R_PAREN):
-        return parms, index
+        return items, index
     
     while True:
-        parm_type, index = parse_type_spec(index)
-        parm_name, index = parse_identifier(index)
-        parms.append([parm_type, parm_name])
+        spec, index = parse_type_spec(index)
+        name, index = parse_identifier(index)
+        items.append(node.Root(spec, name))
 
         if token_is(index, TokenKind.COMMA):
             match_token(index, TokenKind.COMMA)
@@ -81,7 +89,7 @@ def parse_parms(index):
         else:
             break
     
-    return parms, index
+    return items, index
 
 def parse_statements(index):
     for f in (parse_compound_stmt, parse_if_statement, parse_return):
@@ -92,26 +100,26 @@ def parse_statements(index):
     return parse_expression_stmt(index)
 
 def parse_compound_stmt(index):
-    stmts = []
+    items = []
     index = match_token(index, TokenKind.L_CRL_BRCKT)
 
     while True:
         try:
-            node, index = parse_statements(index)
-            stmts.append(node)
+            stmt_node, index = parse_statements(index)
+            items.append(stmt_node)
         except Exception:
             break
 
     index = match_token(index, TokenKind.R_CRL_BRCKT)
 
-    return stmts, index
+    return node.Compound(items), index
     
 def parse_return(index):
     index = match_token(index, TokenKind.RETURN)
-    node, index = parse_expression(index)
+    ret_value, index = parse_expression(index)
     index = match_token(index, TokenKind.SEMICOLON)
 
-    return [node], index
+    return node.Return(ret_value), index
 
 def parse_if_statement(index):
     index = match_token(index, TokenKind.IF)
@@ -125,43 +133,43 @@ def parse_if_statement(index):
     else:
         else_stmt, index = parse_compound_stmt(index+1)
 
-    return [if_cond, if_stmt, else_stmt], index
+    return node.IfStatement(if_cond, if_stmt, else_stmt), index
     
 def parse_expression_stmt(index):
     if token_is(index, TokenKind.SEMICOLON):
         return [], index+1
 
-    node, index = parse_expression(index)
+    expr_node, index = parse_expression(index)
     match_token(index, TokenKind.SEMICOLON)
 
-    return node, index
+    return expr_node, index
 
 def parse_identifier(index):
     t = tokens[index]
     index = match_token(index, TokenKind.IDENTIFIER)
-    return t, index
+    return node.Identifier(t.content), index
 
 #######
 ####### Parsers for expressions
 #######
 def parse_assignment(index):
-    l, index = parse_primary(index)
+    left, index = parse_conditional(index)
 
     op = tokens[index]
     
     node_types = {
-        TokenKind.PLUS: TokenKind.PLUS,
-        TokenKind.MINUS: TokenKind.MINUS,
-        TokenKind.MUL: TokenKind.MUL,
-        TokenKind.DIV: TokenKind.DIV,
-        TokenKind.EQUAL_TO: TokenKind.EQUAL_TO
+        TokenKind.PLUS: node.ArithBinOp,
+        TokenKind.MINUS: node.ArithBinOp,
+        TokenKind.MUL: node.ArithBinOp,
+        TokenKind.DIV: node.ArithBinOp,
+        TokenKind.EQUAL_TO: node.Equals
     }
 
     if op.kind in node_types:
-        r, index = parse_assignment(index+1)
-        return [l, op, r], index
+        right, index = parse_assignment(index+1)
+        return node_types[op.kind](left, right, op), index
     else:
-        return l, index
+        return left, index
 
 def parse_expression(index):
     node, index = parse_assignment(index)
@@ -173,8 +181,7 @@ def parse_conditional(index):
 def parse_primary(index):
     if token_is(index, TokenKind.NUMCONST):
         t = tokens[index]
-        return t.content, index + 1 
+        return node.Number(t.content), index + 1 
     elif token_is(index, TokenKind.IDENTIFIER):
         t = tokens[index]
-        return t.content, index + 1
-
+        return node.Identifier(t.content), index + 1
