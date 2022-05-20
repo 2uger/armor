@@ -54,6 +54,28 @@ class ArithBinOp(Node):
         self.left = left
         self.right = right
         self.op = op
+
+    def make_asm(self, symbol_table, code, reg_table):
+        if isinstance(self.left, self):
+            l_res_reg = self.left.make_asm(symbol_table, code)
+        elif type(self.left) == Number:
+            l_res_reg = reg_table.allocate()
+            code.append(f'mov r{r_res_reg}, #{self.left.value}')
+        elif type(self.left) == Identifier:
+            symbol = symbol_table.get(self.left.name)
+        
+        if isinstance(self.right, self):
+            r_res_reg = self.left_make_asm(symbol_table, code)
+        elif type(self.right) == Number:
+            r_res_reg = reg_table.allocate()
+            code.append(f'mov r{r_res_reg}, #{self.right.value}')
+        elif type(self.right) == Identifier:
+            symbol = symbol_table.get(self.right.name)
+
+
+        res_reg = reg_table.get_free_reg()
+        code.append(f'add r{res_reg}, r{l_res_reg}, r{r_res_reg}')
+        reg_table.put_many([l_res_reg, r_res_reg, res_reg])
     
     def __repr__(self):
         return f'{self.left} {self.op} {self.right}'
