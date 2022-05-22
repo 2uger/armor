@@ -4,6 +4,15 @@ import enum
 class CType(enum.Enum):
     int = 'int'
 
+class ScopeType(enum.Enum):
+    """
+    Would help to differentiate local and global variables memory binding.
+    Because global vars will have absolute memory address, while local would
+    have offset from BP register.
+    """
+    LOCAL = 'local'
+    GLOBAL = 'global'
+
 class Regs:
     def __init__(self):
         self.free_regs = [r for r in range(15)]

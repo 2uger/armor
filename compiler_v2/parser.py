@@ -156,13 +156,13 @@ def parse_assignment(index):
     op = tokens[index]
     
     node_types = {
-        TokenKind.PLUS: node.ArithBinOp,
-        TokenKind.MINUS: node.ArithBinOp,
-        TokenKind.MUL: node.ArithBinOp,
-        TokenKind.DIV: node.ArithBinOp,
+        TokenKind.PLUS: node.Plus,
+        TokenKind.MINUS: node.Minus,
+        TokenKind.MUL: node.Mul,
         TokenKind.EQUAL_TO: node.Equals,
         TokenKind.BT: node.BiggerThan,
-        TokenKind.LT: node.LessThan
+        TokenKind.LT: node.LessThan,
+        TokenKind.EQ: node.Equal
     }
 
     if op.kind in node_types:

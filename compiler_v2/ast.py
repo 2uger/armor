@@ -1,3 +1,4 @@
+from tkinter import W
 import utils as u
 
 class Programm:
@@ -32,24 +33,25 @@ class Declaration:
             var_size = 2
             mem_binding = u.static_storage.place(None, var_size)
             if init:
-                print(init)
                 res_reg = init.make_asm(symbol_table, code)
                 code.append(f'str r{res_reg}, [{mem_binding}]')
                 u.regs.dealloc(res_reg)
-            symbol_table.add_symbol(decl.identifier, u.CType.int, var_size, mem_binding)
+            symbol_table.add_symbol(decl.identifier, u.CType.int, var_size, mem_binding, u.ScopeType.GLOBAL)
         elif isinstance(decl, Function):
-            bp_offset = 0
+            symbol_table.open_scope()
+
+            bp_offset = 4
             for parm in decl.args:
-                parm_name = parm.decl
+                parm_name = parm.decl.identifier
                 parm_size = 2
-                symbol_table.add_symbol(parm_name, u.CType.int, parm_size, bp_offset)
+                symbol_table.add_symbol(parm_name, u.CType.int, parm_size, bp_offset, u.ScopeType.LOCAL)
                 bp_offset += parm_size
 
             func_lable = str(decl.identifier) + ':'
-            code.extend(['\n', func_lable, 'mov bp, sp'])
+            code.extend(['\n', func_lable, 'push {bp}', 'mov bp, sp'])
             self.body.make_asm(symbol_table, code)
-            free_reg = u.regs.alloc()
-            code.extend([f'pop {{r{free_reg}, lr}}', 'b lr'])
+
+            symbol_table.close_scope()
         else:
             raise Exception('Bullshit declaration')
 
@@ -76,7 +78,7 @@ class Function:
     def __repr__(self):
         return f'{self.identifier}: {self.args}'
 
-class FuncCall(Node):
+class FuncCall:
     """Represents function call."""
     def __init__(self, func, args):
         self.func = func
@@ -114,6 +116,8 @@ class Return:
         code.append(f'str r{res_reg}, [bp-4]')
         u.regs.dealloc(res_reg)
 
+        code.extend([f'pop {{bp, lr}}', 'b lr'])
+
 class IfStatement:
     def __init__(self, cond, stmt, else_stmt):
         self.cond = cond
@@ -124,8 +128,6 @@ class IfStatement:
         else_stmt_lable = 'else:'
         self.cond.make_asm(symbol_table, code)
         cmp_cmd = self.cond.cmp_cmd
-        print("Hello")
-        print(type(self.cond))
         code.extend([f'b{cmp_cmd} {else_stmt_lable}'])
 
         self.stmt.make_asm(symbol_table, code)
@@ -147,6 +149,8 @@ class Equals:
 
 ### Expressions
 class ArithBinOp:
+    op_cmd = None
+
     def __init__(self, left, right, op):
         self.left = left
         self.right = right
@@ -157,21 +161,21 @@ class ArithBinOp:
         r_res_reg = self.right.make_asm(symbol_table, code)
 
         res_reg = u.regs.alloc()
-        code.append(f'add r{res_reg}, r{l_res_reg}, r{r_res_reg}')
+        code.append(f'{self.op_cmd} r{res_reg}, r{l_res_reg}, r{r_res_reg}')
         u.regs.dealloc_many([l_res_reg, r_res_reg])
-        print('Return ', res_reg)
         return res_reg
     
     def __repr__(self):
         return f'{self.left} {self.op} {self.right}'
 
 class Plus(ArithBinOp):
-    def __init__(self, left, right, op):
-        super().__init__(left, right, op)
-    
+    op_cmd = 'add'
+
 class Minus(ArithBinOp):
-    def __init__(self, left, right, op):
-        super().__init__(left, right, op)
+    op_cmd = 'sub'
+
+class Mul(ArithBinOp):
+    op_cmd = 'mul'
 
 class Relational(ArithBinOp):
     cmp_cmd = None
@@ -191,6 +195,9 @@ class LessThan(Relational):
 class BiggerThan(Relational):
     cmp_cmd = 'bt'
 
+class Equal(Relational):
+    cmp_cmd = 'eq'
+
 class Identifier:
     def __init__(self, identifier):
         self.identifier = identifier
@@ -203,9 +210,16 @@ class Identifier:
         symbol = symbol_table.lookup(self.identifier)
         if not symbol:
             raise Exception('Reference before assignment')
-        reg = u.regs.alloc()
-        code.append(f'ldr r{reg}, [4096]')
-        return reg
+
+        res_reg = u.regs.alloc()
+        if symbol['scope_type'] == u.ScopeType.LOCAL:
+            free_reg = u.regs.alloc()
+            cmds = [f'sub r{free_reg}, bp, #{symbol["binding"]}', f'ldr r{res_reg}, [r{free_reg}]']
+        else:
+            cmds = [f'ldr r{res_reg}, [{symbol["binding"]}]']
+        code.extend(cmds)
+
+        return res_reg
 
 class Number:
     def __init__(self, number):

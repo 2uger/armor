@@ -47,6 +47,7 @@ class TokenKind(enum.Enum):
 
     BT = '>'
     LT = '<'
+    EQ = '=='
 
 def create_tokens(file_name):
     global tokens
