@@ -1,18 +1,5 @@
 import utils as u
 
-class Node:
-    def __init__(self, r):
-        self.r = None
-
-    def make_asm(self, symbol_table, code):
-        raise NotImplementedError
-
-class DeclNode:
-    pass
-
-class ExprNode:
-    pass
-
 class Programm:
     """Main node of the whole programm."""
     def __init__(self, nodes):

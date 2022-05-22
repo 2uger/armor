@@ -149,9 +149,7 @@ def parse_identifier(index):
     index = match_token(index, TokenKind.IDENTIFIER)
     return node.Identifier(t.content), index
 
-#######
 ####### Parsers for expressions
-#######
 def parse_assignment(index):
     left, index = parse_conditional(index)
 
