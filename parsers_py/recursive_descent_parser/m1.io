@@ -1,10 +1,10 @@
-int m = n + k;
-int m = 21 / 2;
+int m = 2 + 1;
+int n = 21 / m;
 int function(int m, int kkjlk){
-    if (2) {
+    return 2;
+    if (2 < 2) {
         return 2 + 2;
     }else {
         return 324;
     }
-    return fds + fds;
 };

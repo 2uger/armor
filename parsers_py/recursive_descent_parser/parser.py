@@ -4,10 +4,10 @@ import ast as node
 messages = []
 
 def parse(index):
-    node, index = parse_decl_list(index)
+    items, index = parse_decl_list(index)
     messages.append(f'MSG: successfully parse programm' if node else f'ERROR: error while parsing programm, check logs')
     
-    return node
+    return node.Programm(items)
 
 def parse_decl_list(index):
     items = []
@@ -45,7 +45,7 @@ def parse_var_decl(index):
 
     index = match_token(index, TokenKind.SEMICOLON)
 
-    return node.Declaration(node.Root(spec, decl, init)), index
+    return node.Declaration(node.DeclarationRoot(spec, decl, init)), index
 
 # Function definition parser
 def parse_func_definition(index):
@@ -55,7 +55,7 @@ def parse_func_definition(index):
     body, index = parse_compound_stmt(index)
     index = match_token(index, TokenKind.SEMICOLON)
 
-    root = node.Root(spec, decl)
+    root = node.DeclarationRoot(spec, decl)
 
     return node.Declaration(root, body), index
 
@@ -81,7 +81,7 @@ def parse_parms(index):
     while True:
         spec, index = parse_type_spec(index)
         name, index = parse_identifier(index)
-        items.append(node.Root(spec, name))
+        items.append(node.DeclarationRoot(spec, name))
 
         if token_is(index, TokenKind.COMMA):
             match_token(index, TokenKind.COMMA)
@@ -162,7 +162,9 @@ def parse_assignment(index):
         TokenKind.MINUS: node.ArithBinOp,
         TokenKind.MUL: node.ArithBinOp,
         TokenKind.DIV: node.ArithBinOp,
-        TokenKind.EQUAL_TO: node.Equals
+        TokenKind.EQUAL_TO: node.Equals,
+        TokenKind.BT: node.BiggerThan,
+        TokenKind.LT: node.LessThan
     }
 
     if op.kind in node_types:

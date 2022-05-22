@@ -1,13 +1,33 @@
+import bisect
+import enum
+
+class CType(enum.Enum):
+    int = 'int'
+
 class Regs:
     def __init__(self):
         self.free_regs = [r for r in range(15)]
 
-    def allocate(self):
-        return self.free_reg.pop()
+    def alloc(self):
+        return self.free_regs.pop(0)
 
-    def put(self, reg):
-        reg + self.free_reg
+    def dealloc(self, reg):
+        bisect.insort(self.free_regs, reg)
 
-    def put_many(self, regs):
-        regs + self.free_reg
-        
+    def dealloc_many(self, regs):
+        for r in regs:
+            bisect.insort(self.free_regs, r)
+
+class StaticStorage:
+    def __init__(self):
+        self.start = 4096
+
+    def place(self, value, size):
+        old = self.start
+        self.start += size
+        return old
+
+static_storage = StaticStorage() 
+regs = Regs()
+
+CTypeSizes = {CType.int: 4}

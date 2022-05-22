@@ -2,6 +2,7 @@ import sys
 
 from parser import parse
 from tokens import create_tokens, tokens
+from symbol_table import SymbolTable
 
 
 def main():
@@ -14,9 +15,16 @@ def main():
     create_tokens(file_name)
     for t in tokens:
         print(t)
-    n = parse(0)
-    for nn in n:
-        print(nn)
+    root = parse(0)
+
+    for n in root.nodes:
+        print(n)
+    symbol_table = SymbolTable()
+    code = []
+    root.make_asm(symbol_table, code)
+    print(code)
+    for c in code:
+        print(c)
 
 if __name__ == '__main__':
     main()

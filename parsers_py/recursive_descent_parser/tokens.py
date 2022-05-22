@@ -45,6 +45,9 @@ class TokenKind(enum.Enum):
     MUL = '*'
     DIV = '/'
 
+    BT = '>'
+    LT = '<'
+
 def create_tokens(file_name):
     global tokens
     with open(file_name, 'rb') as f:
