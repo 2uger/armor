@@ -1,5 +1,10 @@
-from tkinter import W
 import utils as u
+import asm as asm
+
+class EmptyNode:
+    """Empty node."""
+    def make_asm(self, *args, **kwargs):
+        pass
 
 class Programm:
     """Main node of the whole programm."""
@@ -34,8 +39,9 @@ class Declaration:
             mem_binding = u.static_storage.place(None, var_size)
             if init:
                 res_reg = init.make_asm(symbol_table, code)
-                code.append(f'str r{res_reg}, [{mem_binding}]')
-                u.regs.dealloc(res_reg)
+                free_reg = u.regs.alloc()
+                code.extend([asm.Mov(free_reg, mem_binding), asm.Str(res_reg, free_reg)])
+                u.regs.dealloc_many([res_reg, free_reg])
             symbol_table.add_symbol(decl.identifier, u.CType.int, var_size, mem_binding, u.ScopeType.GLOBAL)
         elif isinstance(decl, Function):
             symbol_table.open_scope()
@@ -47,8 +53,7 @@ class Declaration:
                 symbol_table.add_symbol(parm_name, u.CType.int, parm_size, bp_offset, u.ScopeType.LOCAL)
                 bp_offset += parm_size
 
-            func_lable = str(decl.identifier) + ':'
-            code.extend(['\n', func_lable, 'push {bp}', 'mov bp, sp'])
+            code.extend(['\n', asm.Lable(decl.identifier), asm.Push([16]), asm.Mov(16, 15)])
             self.body.make_asm(symbol_table, code)
 
             symbol_table.close_scope()
@@ -102,6 +107,7 @@ class Compound:
 
     def make_asm(self, symbol_table, code):
         for item in self.items:
+            print(item)
             item.make_asm(symbol_table, code)
 
 class Return:
@@ -113,10 +119,11 @@ class Return:
 
     def make_asm(self, symbol_table, code):
         res_reg = self.ret_expr.make_asm(symbol_table, code)
-        code.append(f'str r{res_reg}, [bp-4]')
-        u.regs.dealloc(res_reg)
-
-        code.extend([f'pop {{bp, lr}}', 'b lr'])
+        free_reg = u.regs.alloc()
+        # Store result in return value place
+        code.extend([asm.Minus(free_reg, free_reg, imm=4), asm.Str(res_reg, free_reg)])
+        # Return from function
+        code.extend([asm.Pop([16, 14]), asm.Branch(14)])
 
 class IfStatement:
     def __init__(self, cond, stmt, else_stmt):
@@ -125,12 +132,11 @@ class IfStatement:
         self.else_stmt = else_stmt
 
     def make_asm(self, symbol_table, code):
-        else_stmt_lable = 'else:'
         self.cond.make_asm(symbol_table, code)
-        cmp_cmd = self.cond.cmp_cmd
-        code.extend([f'b{cmp_cmd} {else_stmt_lable}'])
-
+        else_stmt_lable = asm.Lable('else')
+        code.append(asm.Branch(else_stmt_lable, self.cond.cmp_cmd))
         self.stmt.make_asm(symbol_table, code)
+
         code.append(else_stmt_lable)
         self.else_stmt.make_asm(symbol_table, code)
 
@@ -145,7 +151,21 @@ class Equals:
         return f'{self.left} {self.op} {self.right}'
 
     def make_asm(self, symbol_table, code):
-        pass
+        if not isinstance(self.left, Identifier):
+            raise Exception('Only identifier could be on left side of equal sign')
+        l_symbol = symbol_table.lookup(self.left.identifier)
+        if not l_symbol:
+            raise Exception('Reference before assignment')
+
+        res_reg = self.right.make_asm(symbol_table, code)
+        free_reg = u.regs.alloc()
+        if l_symbol['scope_type'] == u.ScopeType.LOCAL:
+            cmds = [asm.Minus(free_reg, 16, imm=l_symbol['binding']), asm.Str(res_reg, free_reg)]
+        else:
+            cmds = [asm.Mov(free_reg, None, imm=l_symbol['binding']), asm.Str(res_reg, free_reg)]
+
+        code.extend(cmds)
+        u.regs.dealloc_many([res_reg, free_reg])
 
 ### Expressions
 class ArithBinOp:
@@ -161,7 +181,7 @@ class ArithBinOp:
         r_res_reg = self.right.make_asm(symbol_table, code)
 
         res_reg = u.regs.alloc()
-        code.append(f'{self.op_cmd} r{res_reg}, r{l_res_reg}, r{r_res_reg}')
+        code.append(self.op_cmd(res_reg, l_res_reg, r_res_reg))
         u.regs.dealloc_many([l_res_reg, r_res_reg])
         return res_reg
     
@@ -169,13 +189,13 @@ class ArithBinOp:
         return f'{self.left} {self.op} {self.right}'
 
 class Plus(ArithBinOp):
-    op_cmd = 'add'
+    op_cmd = asm.Add
 
 class Minus(ArithBinOp):
-    op_cmd = 'sub'
+    op_cmd = asm.Minus
 
 class Mul(ArithBinOp):
-    op_cmd = 'mul'
+    op_cmd = asm.Mul
 
 class Relational(ArithBinOp):
     cmp_cmd = None
@@ -187,7 +207,7 @@ class Relational(ArithBinOp):
         l_res_reg = self.left.make_asm(symbol_table, code)
         r_res_reg = self.right.make_asm(symbol_table, code)
 
-        code.append(f'cmp r{l_res_reg}, r{r_res_reg}')
+        code.append(asm.Cmp(None, l_res_reg, r_res_reg))
 
 class LessThan(Relational):
     cmp_cmd = 'lt'
@@ -212,12 +232,14 @@ class Identifier:
             raise Exception('Reference before assignment')
 
         res_reg = u.regs.alloc()
+        free_reg = u.regs.alloc()
         if symbol['scope_type'] == u.ScopeType.LOCAL:
-            free_reg = u.regs.alloc()
-            cmds = [f'sub r{free_reg}, bp, #{symbol["binding"]}', f'ldr r{res_reg}, [r{free_reg}]']
+            cmds = [asm.Minus(free_reg, 16, imm=symbol['binding']), asm.Ldr(res_reg, free_reg)]
         else:
-            cmds = [f'ldr r{res_reg}, [{symbol["binding"]}]']
+            cmds = [asm.Mov(free_reg, None, imm=symbol['binding']), asm.Ldr(res_reg, free_reg)]
+
         code.extend(cmds)
+        u.regs.dealloc(free_reg)
 
         return res_reg
 
@@ -231,5 +253,5 @@ class Number:
 
     def make_asm(self, symbol_table, code):
         reg = u.regs.alloc()
-        code.append(f'mov r{reg}, #{self.number}')
+        code.append(asm.Mov(reg, None, imm=self.number))
         return reg

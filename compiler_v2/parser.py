@@ -137,11 +137,13 @@ def parse_if_statement(index):
     
 def parse_expression_stmt(index):
     if token_is(index, TokenKind.SEMICOLON):
-        return [], index+1
+        return node.EmptyNode(), index+1
 
     expr_node, index = parse_expression(index)
     match_token(index, TokenKind.SEMICOLON)
 
+    print('Hello')
+    print(expr_node)
     return expr_node, index
 
 def parse_identifier(index):
