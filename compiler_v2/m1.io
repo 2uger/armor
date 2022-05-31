@@ -9,3 +9,7 @@ int function(int l, int k){
         return 324;
     }
 };
+int main() {
+    n = function(2);
+    return 2;
+};

@@ -66,10 +66,21 @@ class Lable:
     def __repr__(self):
         return f'{self.lable}:'
 
-class Branch:
-    def __init__(self, lable, cmp_cmd=None):
-        self.lable = lable
+class B:
+    cmd = 'b'
+
+    def __init__(self, location, cmp_cmd=''):
+        self.location = location
         self.cmp_cmd = cmp_cmd
 
     def __repr__(self):
-        return f'b{self.cmp_cmd} {self.lable}'
+        return f'b{self.cmp_cmd} {self.location}'
+
+class BL(B):
+    cmd = 'bl'
+
+class BX(B):
+    cmd = 'bx'
+
+    def __repr__(self):
+        return f'b{self.cmp_cmd} r{self.location}'

@@ -89,6 +89,29 @@ class FuncCall:
         self.func = func
         self.args = args
 
+    def make_asm(self, symbol_table, code):
+        code.append(asm.Push([14]))
+        regs_to_push = []
+
+        for arg in self.args:
+            regs_to_push.append(arg.make_asm(symbol_table, code))
+
+        if regs_to_push:
+            code.append(asm.Push(regs_to_push))
+        u.regs.dealloc_many(regs_to_push)
+
+        code.append(asm.BL(self.func))
+
+        free_reg = u.regs.alloc()
+        res_reg = u.regs.alloc()
+        code.extend([asm.Minus(free_reg, '14', imm=4), asm.Str(res_reg, free_reg)])
+        u.regs.dealloc(free_reg)
+
+        # TODO: count how many imm values should sub
+        code.append(asm.Minus('14', '14', imm=4 + 2 * len(regs_to_push)))
+
+        return res_reg
+
 class ExprStmt:
     """Single Expression statement."""
     def __init__(self, expr):
@@ -121,9 +144,10 @@ class Return:
         res_reg = self.ret_expr.make_asm(symbol_table, code)
         free_reg = u.regs.alloc()
         # Store result in return value place
-        code.extend([asm.Minus(free_reg, free_reg, imm=4), asm.Str(res_reg, free_reg)])
+        code.extend([asm.Minus(free_reg, '16', imm=4), asm.Str(res_reg, free_reg)])
         # Return from function
-        code.extend([asm.Pop([16, 14]), asm.Branch(14)])
+        code.extend([asm.Pop([16, 14]), asm.BX(14)])
+        u.regs.dealloc_many([res_reg, free_reg])
 
 class IfStatement:
     def __init__(self, cond, stmt, else_stmt):
@@ -134,7 +158,7 @@ class IfStatement:
     def make_asm(self, symbol_table, code):
         self.cond.make_asm(symbol_table, code)
         else_stmt_lable = asm.Lable('else')
-        code.append(asm.Branch(else_stmt_lable, self.cond.cmp_cmd))
+        code.append(asm.B(else_stmt_lable, self.cond.cmp_cmd))
         self.stmt.make_asm(symbol_table, code)
 
         code.append(else_stmt_lable)

@@ -107,7 +107,7 @@ def parse_compound_stmt(index):
         try:
             stmt_node, index = parse_statements(index)
             items.append(stmt_node)
-        except Exception:
+        except Exception as e:
             break
 
     index = match_token(index, TokenKind.R_CRL_BRCKT)
@@ -171,6 +171,8 @@ def parse_assignment(index):
         right, index = parse_assignment(index+1)
         return node_types[op.kind](left, right, op), index
     else:
+        print(3232432432432)
+        print(left, index)
         return left, index
 
 def parse_expression(index):
@@ -184,6 +186,25 @@ def parse_primary(index):
     if token_is(index, TokenKind.NUMCONST):
         t = tokens[index]
         return node.Number(t.content), index + 1 
+    elif token_is(index, TokenKind.IDENTIFIER) and token_is(index+1, TokenKind.L_PAREN):
+        identifier = tokens[index]
+        args = []
+        index += 2
+
+        if token_is(index, TokenKind.R_PAREN):
+            return node.FuncCall(identifier.content, args), index + 1
+        
+        while True:
+            arg, index = parse_assignment(index)
+            args.append(arg)
+
+            if token_is(index, TokenKind.COMMA):
+                index += 1
+            else:
+                break
+
+        index = match_token(index, TokenKind.R_PAREN)
+        return node.FuncCall(identifier.content, args), index
     elif token_is(index, TokenKind.IDENTIFIER):
         t = tokens[index]
         return node.Identifier(t.content), index + 1
