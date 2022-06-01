@@ -1,8 +1,12 @@
 """Assembly commands"""
 
+from utils import Reg
+import typing as t
+
+
 class ASMCommand:
     cmd = None
-    def __init__(self, op_dest, op1, op2=None, imm=0):
+    def __init__(self, op_dest: Reg, op1: Reg, op2: t.Optional[Reg]=None, imm=0):
         self.op_dest = op_dest
         self.op1 = op1
         self.op2 = op2
@@ -10,9 +14,9 @@ class ASMCommand:
     
     def __repr__(self):
         if self.op2:
-            return f'{self.cmd} r{self.op_dest}, r{self.op1}, r{self.op2}'
+            return f'{self.cmd} {self.op_dest.reg}, {self.op1.reg}, {self.op2.reg}'
         else:
-            return f'{self.cmd} r{self.op_dest}, r{self.op1}, #{self.imm}'
+            return f'{self.cmd} {self.op_dest.reg}, {self.op1.reg}, #{self.imm}'
 
 class Add(ASMCommand):
     cmd = 'add'
@@ -28,9 +32,9 @@ class Ldr(ASMCommand):
 
     def __repr__(self):
         if self.op2 or self.imm:
-            return f'{self.cmd} r{self.op_dest}, [r{self.op1}' + (f', r{self.op2}]' if self.op2 else f', #{self.imm}]')
+            return f'{self.cmd} {self.op_dest.reg}, [{self.op1.reg}' + (f', {self.op2.reg}]' if self.op2 else f', #{self.imm}]')
         else:
-            return f'{self.cmd} r{self.op_dest}, [r{self.op1}]'
+            return f'{self.cmd} {self.op_dest.reg}, [{self.op1.reg}]'
     
 class Str(Ldr):
     cmd = 'str'
@@ -39,21 +43,21 @@ class Mov(ASMCommand):
     cmd = 'mov'
 
     def __repr__(self):
-        return f'{self.cmd} r{self.op_dest}, ' + (f'r{self.op1}' if self.op1 else f'#{self.imm}')
+        return f'{self.cmd} {self.op_dest.reg}, ' + (f'{self.op1.reg}' if self.op1 else f'#{self.imm}')
 
 class Cmp(ASMCommand):
     cmd = 'cmp'
 
     def __repr__(self):
-        return f'{self.cmd} r{self.op1}, r{self.op2}'
+        return f'{self.cmd} {self.op1.reg}, {self.op2.reg}'
 
 class Push:
     cmd = 'push'
-    def __init__(self, regs):
+    def __init__(self, regs: t.List[Reg]):
         self.regs = regs
 
     def __repr__(self):
-        rs = ' ,'.join([f'r{r}' for r in self.regs])
+        rs = ' ,'.join([r.reg for r in self.regs])
         return f'{self.cmd} {{{rs}}}'
 
 class Pop(Push):
@@ -79,8 +83,12 @@ class B:
 class BL(B):
     cmd = 'bl'
 
-class BX(B):
+class BX:
     cmd = 'bx'
 
+    def __init__(self, location_reg: Reg, cmp_cmd=''):
+        self.location_reg = location_reg
+        self.cmp_cmd = cmp_cmd
+
     def __repr__(self):
-        return f'b{self.cmp_cmd} r{self.location}'
+        return f'b{self.cmp_cmd} r{self.location_reg.reg}'

@@ -1,4 +1,4 @@
-import bisect
+from collections import namedtuple
 import enum
 
 class CType(enum.Enum):
@@ -13,19 +13,30 @@ class ScopeType(enum.Enum):
     LOCAL = 'local'
     GLOBAL = 'global'
 
+CTypeSizes = {CType.int: 4}
+
+# Represents register:
+# 1, r1
+# 2, r2
+Reg = namedtuple('Reg', ['number', 'reg'])
+
 class Regs:
     def __init__(self):
-        self.free_regs = [r for r in range(15)]
+        self.free_regs = [Reg(n, f'r{n}') for n in range(13)]
+        self.bp = Reg(13, 'bp')
+        self.sp = Reg(14, 'sp')
+        self.pc = Reg(15, 'pc')
 
     def alloc(self):
         return self.free_regs.pop(0)
 
     def dealloc(self, reg):
-        bisect.insort(self.free_regs, reg)
+        self.free_regs.insert(0, reg)
+        self.free_regs.sort(key=lambda x: x.number)
 
     def dealloc_many(self, regs):
         for r in regs:
-            bisect.insort(self.free_regs, r)
+            self.dealloc(r)
 
 class StaticStorage:
     def __init__(self):
@@ -38,5 +49,3 @@ class StaticStorage:
 
 static_storage = StaticStorage() 
 regs = Regs()
-
-CTypeSizes = {CType.int: 4}
