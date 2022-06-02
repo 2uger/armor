@@ -1,12 +1,12 @@
 """Assembly commands"""
 
-from utils import Reg
+from utils import Register
 import typing as t
 
 
 class ASMCommand:
     cmd = None
-    def __init__(self, op_dest: Reg, op1: Reg, op2: t.Optional[Reg]=None, imm=0):
+    def __init__(self, op_dest: Register, op1: Register, op2: t.Optional[Register]=None, imm=0):
         self.op_dest = op_dest
         self.op1 = op1
         self.op2 = op2
@@ -53,7 +53,7 @@ class Cmp(ASMCommand):
 
 class Push:
     cmd = 'push'
-    def __init__(self, regs: t.List[Reg]):
+    def __init__(self, regs: t.List[Register]):
         self.regs = regs
 
     def __repr__(self):
@@ -84,11 +84,9 @@ class BL(B):
     cmd = 'bl'
 
 class BX:
-    cmd = 'bx'
-
-    def __init__(self, location_reg: Reg, cmp_cmd=''):
+    def __init__(self, location_reg: Register, cmp_cmd=''):
         self.location_reg = location_reg
         self.cmp_cmd = cmp_cmd
 
     def __repr__(self):
-        return f'b{self.cmp_cmd} r{self.location_reg.reg}'
+        return f'bx{self.cmp_cmd} {self.location_reg.reg}'

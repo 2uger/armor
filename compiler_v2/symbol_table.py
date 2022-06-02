@@ -1,16 +1,16 @@
+from collections import namedtuple
+
+Symbol = namedtuple('Symbol', ['name', 'c_type', 'size', 'binding', 'scope_type'])
+
 class SymbolTable:
     def __init__(self):
         self.tables = []
 
         self.open_scope()
 
-    def add_symbol(self, name, c_type, size, binding, scope_type):
+    def add_symbol(self, name, c_type, binding, scope_type):
         curr_table = self.tables[len(self.tables) - 1]
-        curr_table[name] = {'name': name,
-                            'c_type': c_type,
-                            'size': size,
-                            'binding': binding,
-                            'scope_type': scope_type}
+        curr_table[name] = Symbol(name, c_type, c_type.size, binding, scope_type)
     
     def lookup(self, name):
         symbol = None

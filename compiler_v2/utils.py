@@ -1,9 +1,6 @@
 from collections import namedtuple
 import enum
 
-class CType(enum.Enum):
-    int = 'int'
-
 class ScopeType(enum.Enum):
     """
     Would help to differentiate local and global variables memory binding.
@@ -13,19 +10,26 @@ class ScopeType(enum.Enum):
     LOCAL = 'local'
     GLOBAL = 'global'
 
-CTypeSizes = {CType.int: 4}
+# Describe C types
+class CTypeSpec(enum.Enum):
+    int = 'int'
+    char = 'char'
+
+CType = namedtuple('CType', ['size'])
+CTypeInt = CType(4)
+CTypeChar = CType(2)
 
 # Represents register:
 # 1, r1
 # 2, r2
-Reg = namedtuple('Reg', ['number', 'reg'])
+Register = namedtuple('Register', ['number', 'reg'])
 
 class Regs:
     def __init__(self):
-        self.free_regs = [Reg(n, f'r{n}') for n in range(13)]
-        self.bp = Reg(13, 'bp')
-        self.sp = Reg(14, 'sp')
-        self.pc = Reg(15, 'pc')
+        self.free_regs = [Register(n, f'r{n}') for n in range(13)]
+        self.bp = Register(13, 'bp')
+        self.sp = Register(14, 'sp')
+        self.pc = Register(15, 'pc')
 
     def alloc(self):
         return self.free_regs.pop(0)

@@ -1,3 +1,4 @@
+from symbol_table import SymbolTable
 import utils as u
 import asm as asm
 
@@ -26,39 +27,53 @@ class Declaration:
     def __repr__(self):
         return f'{self.node}: {self.body}'
 
-    def make_asm(self, symbol_table, code):
+    def make_asm(self, symbol_table: SymbolTable, code):
         spec = self.node.spec
         decl = self.node.decl
         init = self.node.init
 
         if isinstance(decl, Identifier):
             if symbol_table.lookup(decl.identifier):
-                raise Exception('Multiple declaration')
+                raise Exception(f'Multiple declaration for: {decl.identifier}')
 
-            var_size = 2
-            mem_binding = u.static_storage.place(None, var_size)
+            # TODO: after add new types - change this
+            c_type = u.CTypeInt
+
+            mem_binding = u.static_storage.place(None, c_type.size)
             if init:
                 res_reg = init.make_asm(symbol_table, code)
                 free_reg = u.regs.alloc()
                 code.extend([asm.Mov(free_reg, None, imm=mem_binding), asm.Str(res_reg, free_reg)])
                 u.regs.dealloc_many([res_reg, free_reg])
-            symbol_table.add_symbol(decl.identifier, u.CType.int, var_size, mem_binding, u.ScopeType.GLOBAL)
+            symbol_table.add_symbol(decl.identifier, c_type, mem_binding, u.ScopeType.GLOBAL)
         elif isinstance(decl, Function):
             symbol_table.open_scope()
 
-            bp_offset = 4
+            # STACK:
+            # arg-1
+            # arg-2
+            # ...
+            # arg-n
+            # ret_value
+            # ret_address
+            # old_bp
+            # BP - frame pointer for current function points here
+
+            # bp offset for first argument
+            bp_offset = 4 + 4 + 4 + u.CTypeInt.size * len(decl.args)
+
             for parm in decl.args:
                 parm_name = parm.decl.identifier
-                parm_size = 2
-                symbol_table.add_symbol(parm_name, u.CType.int, parm_size, bp_offset, u.ScopeType.LOCAL)
-                bp_offset += parm_size
+                c_type = u.CTypeInt
+                symbol_table.add_symbol(parm_name, c_type, bp_offset, u.ScopeType.LOCAL)
+                bp_offset -= c_type.size
 
             code.extend(['\n', asm.Lable(decl.identifier), asm.Push([u.regs.bp]), asm.Mov(u.regs.bp, u.regs.sp)])
             self.body.make_asm(symbol_table, code)
 
             symbol_table.close_scope()
         else:
-            raise Exception('Bullshit declaration')
+            raise Exception(f'Bullshit declaration: {self}')
 
 class DeclarationRoot:
     def __init__(self, spec, decl, init=None):
@@ -90,25 +105,29 @@ class FuncCall:
         self.args = args
 
     def make_asm(self, symbol_table, code):
-        code.append(asm.Push([u.regs.sp]))
-        regs_to_push = []
+        # TODO: save registers in use
+        args_to_push = []
 
         for arg in self.args:
-            regs_to_push.append(arg.make_asm(symbol_table, code))
+            args_to_push.append(arg.make_asm(symbol_table, code))
 
-        if regs_to_push:
-            code.append(asm.Push(regs_to_push))
-        u.regs.dealloc_many(regs_to_push)
-
+        # Push arguments
+        if args_to_push:
+            code.append(asm.Push(args_to_push))
+            u.regs.dealloc_many(args_to_push)
+        # Push space for return value
+        code.append(asm.Add(u.regs.sp, u.regs.sp, imm=u.CTypeInt.size))
+        # Call function
         code.append(asm.BL(self.func))
 
+        # Collect return value
         free_reg = u.regs.alloc()
         res_reg = u.regs.alloc()
-        code.extend([asm.Minus(free_reg, u.regs.sp, imm=4), asm.Str(res_reg, free_reg)])
+        code.extend([asm.Minus(free_reg, u.regs.sp, imm=u.CTypeInt.size), asm.Str(res_reg, free_reg)])
         u.regs.dealloc(free_reg)
 
-        # TODO: count how many imm values should sub
-        code.append(asm.Minus(u.regs.sp, u.regs.sp, imm=4 + 2 * len(regs_to_push)))
+        # Clean up stack from arguments
+        code.append(asm.Minus(u.regs.sp, u.regs.sp, imm=4 * 2 + u.CTypeInt.size * len(args_to_push)))
 
         return res_reg
 
@@ -144,9 +163,9 @@ class Return:
         res_reg = self.ret_expr.make_asm(symbol_table, code)
         free_reg = u.regs.alloc()
         # Store result in return value place
-        code.extend([asm.Minus(free_reg, u.regs.bp, imm=4), asm.Str(res_reg, free_reg)])
+        code.extend([asm.Minus(free_reg, u.regs.bp, imm=u.CTypeInt.size * 2), asm.Str(res_reg, free_reg)])
         # Return from function
-        code.extend([asm.Pop([u.regs.bp, u.regs.sp]), asm.BX(u.regs.sp)])
+        code.extend([asm.Pop([u.regs.bp, free_reg]), asm.BX(free_reg)])
         u.regs.dealloc_many([res_reg, free_reg])
 
 class IfStatement:
@@ -183,10 +202,10 @@ class Equals:
 
         res_reg = self.right.make_asm(symbol_table, code)
         free_reg = u.regs.alloc()
-        if l_symbol['scope_type'] == u.ScopeType.LOCAL:
-            cmds = [asm.Minus(free_reg, u.regs.bp, imm=l_symbol['binding']), asm.Str(res_reg, free_reg)]
+        if l_symbol.scope_type == u.ScopeType.LOCAL:
+            cmds = [asm.Minus(free_reg, u.regs.bp, imm=l_symbol.binding), asm.Str(res_reg, free_reg)]
         else:
-            cmds = [asm.Mov(free_reg, None, imm=l_symbol['binding']), asm.Str(res_reg, free_reg)]
+            cmds = [asm.Mov(free_reg, None, imm=l_symbol.binding), asm.Str(res_reg, free_reg)]
 
         code.extend(cmds)
         u.regs.dealloc_many([res_reg, free_reg])
@@ -250,17 +269,17 @@ class Identifier:
     def __repr__(self):
         return f'Identifier: {self.identifier}'
 
-    def make_asm(self, symbol_table, code):
+    def make_asm(self, symbol_table: SymbolTable, code):
         symbol = symbol_table.lookup(self.identifier)
         if not symbol:
             raise Exception('Reference before assignment')
 
         res_reg = u.regs.alloc()
         free_reg = u.regs.alloc()
-        if symbol['scope_type'] == u.ScopeType.LOCAL:
-            cmds = [asm.Minus(free_reg, u.regs.bp, imm=symbol['binding']), asm.Ldr(res_reg, free_reg)]
+        if symbol.scope_type == u.ScopeType.LOCAL:
+            cmds = [asm.Minus(free_reg, u.regs.bp, imm=symbol.binding), asm.Ldr(res_reg, free_reg)]
         else:
-            cmds = [asm.Mov(free_reg, None, imm=symbol['binding']), asm.Ldr(res_reg, free_reg)]
+            cmds = [asm.Mov(free_reg, None, imm=symbol.binding), asm.Ldr(res_reg, free_reg)]
 
         code.extend(cmds)
         u.regs.dealloc(free_reg)
