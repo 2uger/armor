@@ -1,6 +1,6 @@
-int m = 2 + 1;
+int m = 2 + 12;
 int n = 21 + m;
-int function(int l, int k){
+void function(int l, int k){
     k = 2*2;
     if (2 < 2) {
         return m + k;
@@ -18,6 +18,6 @@ rec(int n){
     }
 };
 int main() {
-    n = function(2);
+    n = function(2, 2);
     return 2;
 };

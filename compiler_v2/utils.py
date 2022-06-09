@@ -14,10 +14,12 @@ class ScopeType(enum.Enum):
 class CTypeSpec(enum.Enum):
     int = 'int'
     char = 'char'
+    void = 'void'
 
 CType = namedtuple('CType', ['size'])
 CTypeInt = CType(4)
 CTypeChar = CType(2)
+CTypeVoid = CType(0)
 
 # Represents register:
 # 1, r1

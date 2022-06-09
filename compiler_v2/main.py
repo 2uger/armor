@@ -1,5 +1,6 @@
 import sys
 
+from context import Context
 from parser import parse
 from tokens import create_tokens, tokens
 from symbol_table import SymbolTable
@@ -17,12 +18,14 @@ def main():
         print(t)
     root = parse(0)
 
-    for n in root.nodes:
-        print(n)
     symbol_table = SymbolTable()
     code = []
-    root.make_asm(symbol_table, code)
-    print(code)
+    ctx = Context()
+    try:
+        root.make_asm(symbol_table, code, ctx)
+    except Exception as e:
+        print(e.args[0])
+        return
     for c in code:
         print(c)
 

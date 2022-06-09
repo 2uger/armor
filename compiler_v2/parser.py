@@ -24,14 +24,13 @@ def parse_decl_list(index):
     return items, index
 
 def parse_decl(index):
-    match_token(index, TokenKind.INT)
+    if not token_in(index, (TokenKind.INT, TokenKind.VOID)):
+        raise Exception(f'wrong type for declaration: {tokens[index]}')
     match_token(index+1, TokenKind.IDENTIFIER)
 
     if token_in(index+2, (TokenKind.EQUAL_TO, TokenKind.SEMICOLON)):
-        print('Var')
         return parse_var_decl(index)
     else:
-        print('Func')
         return parse_func_definition(index)
 
 def parse_var_decl(index):
@@ -70,8 +69,9 @@ def parse_func_declarator(index):
 
 def parse_type_spec(index):
     t = tokens[index]
-    index = match_token(index, TokenKind.INT)
-    return t, index
+    if token_in(index, (TokenKind.INT, TokenKind.VOID)):
+        return t, index + 1
+    raise Exception(f'Unknown type spec: {t}')
 
 def parse_parms(index):
     items = []
@@ -142,8 +142,6 @@ def parse_expression_stmt(index):
     expr_node, index = parse_expression(index)
     match_token(index, TokenKind.SEMICOLON)
 
-    print('Hello')
-    print(expr_node)
     return expr_node, index
 
 def parse_identifier(index):
@@ -171,8 +169,6 @@ def parse_assignment(index):
         right, index = parse_assignment(index+1)
         return node_types[op.kind](left, right, op), index
     else:
-        print(3232432432432)
-        print(left, index)
         return left, index
 
 def parse_expression(index):

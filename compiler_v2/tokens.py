@@ -22,6 +22,7 @@ class TokenKind(enum.Enum):
     KEYWORD = 'keyword'
     SYMBOL = 'symbol'
 
+    VOID = 'void'
     INT = 'int'
     BOOL = 'bool'
     RETURN = 'return'
