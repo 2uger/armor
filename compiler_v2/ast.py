@@ -72,7 +72,7 @@ class Declaration:
             # old_bp
             # BP - frame pointer for current function points here
 
-            # bp offset for first argument
+            # bp offset for first argument = old_bp + red_address + ret_value + args
             bp_offset = 4 + 4 + 4 + u.CTypeInt.size * len(decl.parms)
 
             for parm in decl.parms:

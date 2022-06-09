@@ -92,7 +92,7 @@ def parse_parms(index):
     return items, index
 
 def parse_statements(index):
-    for f in (parse_compound_stmt, parse_if_statement, parse_return):
+    for f in (parse_compound_stmt, parse_if_statement, parse_return, parse_var_decl):
         try:
             return f(index)
         except Exception:
