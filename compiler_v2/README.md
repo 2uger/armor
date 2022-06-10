@@ -11,5 +11,7 @@ TODO:
 - Beeing able to recognize local variables in function body [+-]
 - Follow current context to know what function should return [+]
 ***
+- Add char type, make it different size
+***
 - Count every expression inside if statement []
 - Else lables same everywhere, need new ones for every if..else []

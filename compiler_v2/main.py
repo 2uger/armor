@@ -1,5 +1,6 @@
 import sys
 
+import asm
 from context import Context
 from parser import parse
 from tokens import create_tokens, tokens
@@ -7,15 +8,15 @@ from symbol_table import SymbolTable
 
 
 def main():
-    file_name = 'm1.c'
-    #if len(sys.argv) > 1:
-    #    file_name = sys.argv[1]
-    #else:
-    #    print('Provide file name');
-    #    return
+    if len(sys.argv) > 1:
+        file_name = sys.argv[1]
+    else:
+        print('Provide file name')
+        return
+
+    # Tokenize stage
     create_tokens(file_name)
-    for t in tokens:
-        print(t)
+    # Parser stage
     root = parse(0)
 
     symbol_table = SymbolTable()
@@ -26,8 +27,12 @@ def main():
     except Exception as e:
         print(e.args[0])
         return
+
     for c in code:
-        print(c)
+        if not isinstance(c, asm.Lable):
+            print('    ' + str(c))
+        else:
+            print(c)
 
 if __name__ == '__main__':
     main()
