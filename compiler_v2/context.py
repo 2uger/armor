@@ -6,7 +6,7 @@ class Context:
     """
     def __init__(self):
         self.return_type = None
-        self.is_global = False
+        self.is_global = True
 
     def set_global(self, val):
         self.is_global = val

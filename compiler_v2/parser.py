@@ -7,7 +7,7 @@ def parse(index):
     items, index = parse_decl_list(index)
     messages.append(f'MSG: successfully parse programm' if node else f'ERROR: error while parsing programm, check logs')
     
-    return node.Programm(items)
+    return node.Program(items)
 
 def parse_decl_list(index):
     items = []

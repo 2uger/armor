@@ -53,5 +53,14 @@ class StaticStorage:
         self.start += size
         return old
 
+class Lable:
+    def __init__(self):
+        self.n = -1
+
+    def get(self):
+        self.n += 1
+        return f'l{self.n}'
+
 static_storage = StaticStorage() 
 regs = Regs()
+lable = Lable()

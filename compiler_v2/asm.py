@@ -5,7 +5,9 @@ import typing as t
 
 
 class ASMCommand:
+
     cmd = None
+
     def __init__(self, op_dest: Register, op1: Register, op2: t.Optional[Register]=None, imm=0):
         self.op_dest = op_dest
         self.op1 = op1
@@ -21,7 +23,7 @@ class ASMCommand:
 class Add(ASMCommand):
     cmd = 'add'
 
-class Minus(ASMCommand):
+class Sub(ASMCommand):
     cmd = 'sub'
 
 class Mul(ASMCommand):

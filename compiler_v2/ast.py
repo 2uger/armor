@@ -1,15 +1,17 @@
 from symbol_table import SymbolTable
+from context import Context
 import utils as u
 import asm as asm
 import tokens as t
+
 
 class EmptyNode:
     """Empty node."""
     def make_asm(self, *args, **kwargs):
         pass
 
-class Programm:
-    """Main node of the whole programm."""
+class Program:
+    """Main node of the whole program."""
     def __init__(self, nodes):
         self.nodes = nodes
 
@@ -28,19 +30,31 @@ class Declaration:
     def __repr__(self):
         return f'{self.node}: {self.body}'
 
-    def make_asm(self, symbol_table: SymbolTable, code, ctx):
+    def make_asm(self, symbol_table: SymbolTable, code, ctx: Context):
         spec = self.node.spec
         decl = self.node.decl
         init = self.node.init
 
         if isinstance(decl, Identifier):
-            if symbol_table.lookup(decl.identifier):
-                raise Exception(f'Multiple declaration for: {decl.identifier}')
+            symbol = symbol_table.lookup(decl.identifier)
+            if symbol:
+                if ctx.is_global:
+                    raise Exception(f'Multiple declaration for: {decl.identifier}')
+                # Already declared variable inside function
+                elif not ctx.is_global and init:
+                    res_reg = init.make_asm(symbol_table, code, ctx)
+                    free_reg = u.regs.alloc()
+                    code.extend([asm.Add(free_reg, u.regs.bp, imm=symbol.binding), asm.Str(res_reg, free_reg)])
+                    u.regs.dealloc(res_reg)
+                    return
 
             # TODO: after add new types - change this
             c_type = u.CTypeInt
 
+            # global variable declaration - it's located in static storage
             mem_binding = u.static_storage.place(None, c_type.size)
+            # local variable declaration - should be places on stack, when step into function
+                
             if init:
                 res_reg = init.make_asm(symbol_table, code, ctx)
                 free_reg = u.regs.alloc()
@@ -52,7 +66,9 @@ class Declaration:
             return_c_type = {t.TokenKind.VOID: u.CTypeVoid,
                              t.TokenKind.INT: u.CTypeInt}.get(spec.kind)
             ctx.set_return(return_c_type)
+            ctx.set_global(False)
 
+            # Collect function parameters
             parms_list = []
             for parm in decl.parms:
                 # TODO: after add new types - change this
@@ -72,7 +88,7 @@ class Declaration:
             # old_bp
             # BP - frame pointer for current function points here
 
-            # bp offset for first argument = old_bp + red_address + ret_value + args
+            # bp offset for first argument = old_bp + red_address + ret_value + len(args) * size
             bp_offset = 4 + 4 + 4 + u.CTypeInt.size * len(decl.parms)
 
             for parm in decl.parms:
@@ -81,7 +97,20 @@ class Declaration:
                 symbol_table.add_symbol(parm_name, c_type, bp_offset, u.ScopeType.LOCAL)
                 bp_offset -= c_type.size
 
-            code.extend(['\n', asm.Lable(decl.identifier), asm.Push([u.regs.bp]), asm.Mov(u.regs.bp, u.regs.sp)])
+            # Collect local variables to create empty space on stack for them
+            local_var_bp_offset = 0
+            for stmt in self.body:
+                if isinstance(stmt, Declaration):
+                    _decl = stmt.node.decl
+                    # TODO: after add new types - change this
+                    c_type = u.CTypeInt
+                    symbol_table.add_symbol(_decl.identifier, c_type, local_var_bp_offset, u.ScopeType.LOCAL)
+                    local_var_bp_offset += c_type.size
+
+            code.extend(['\n', asm.Lable(decl.identifier),
+                         asm.Push([u.regs.bp]),
+                         asm.Mov(u.regs.bp, u.regs.sp),
+                         asm.Sub(u.regs.sp, u.regs.sp, imm=local_var_bp_offset)],)
             self.body.make_asm(symbol_table, code, ctx)
 
             symbol_table.close_scope()
@@ -146,11 +175,11 @@ class FuncCall:
         # Collect return value
         free_reg = u.regs.alloc()
         res_reg = u.regs.alloc()
-        code.extend([asm.Minus(free_reg, u.regs.sp, imm=u.CTypeInt.size), asm.Str(res_reg, free_reg)])
+        code.extend([asm.Sub(free_reg, u.regs.sp, imm=u.CTypeInt.size), asm.Str(res_reg, free_reg)])
         u.regs.dealloc(free_reg)
 
         # Clean up stack from arguments
-        code.append(asm.Minus(u.regs.sp, u.regs.sp, imm=4 * 2 + u.CTypeInt.size * len(args_to_push)))
+        code.append(asm.Sub(u.regs.sp, u.regs.sp, imm=4 * 2 + u.CTypeInt.size * len(args_to_push)))
 
         return res_reg
 
@@ -163,6 +192,11 @@ class Compound:
     def __init__(self, items):
         self.items = items
 
+    def make_asm(self, symbol_table, code, ctx):
+        for item in self.items:
+            print(item)
+            item.make_asm(symbol_table, code, ctx)
+
     def __repr__(self):
         r = '{\n'
         for i in self.items:
@@ -170,10 +204,16 @@ class Compound:
         r += '}'
         return r
 
-    def make_asm(self, symbol_table, code, ctx):
-        for item in self.items:
-            print(item)
-            item.make_asm(symbol_table, code, ctx)
+    def __iter__(self):
+        self.n = 0
+        return self
+
+    def __next__(self):
+        while self.n < len(self.items):
+            item = self.items[self.n]
+            self.n += 1
+            return item
+        raise StopIteration
 
 class Return:
     def __init__(self, ret_expr):
@@ -188,7 +228,7 @@ class Return:
         res_reg = self.ret_expr.make_asm(symbol_table, code, ctx)
         free_reg = u.regs.alloc()
         # Store result in return value place
-        code.extend([asm.Minus(free_reg, u.regs.bp, imm=u.CTypeInt.size * 2), asm.Str(res_reg, free_reg)])
+        code.extend([asm.Sub(free_reg, u.regs.bp, imm=u.CTypeInt.size * 2), asm.Str(res_reg, free_reg)])
         # Return from function
         code.extend([asm.Pop([u.regs.bp, free_reg]), asm.BX(free_reg)])
         u.regs.dealloc_many([res_reg, free_reg])
@@ -200,12 +240,16 @@ class IfStatement:
         self.else_stmt = else_stmt
 
     def make_asm(self, symbol_table, code, ctx):
+        if not isinstance(self.cond, Relational):
+            raise Exception('Can handle only relational conditional inside if statement')
+
         self.cond.make_asm(symbol_table, code, ctx)
-        else_stmt_lable = asm.Lable('else')
+
+        else_stmt_lable = u.lable.get()
         code.append(asm.B(else_stmt_lable, self.cond.cmp_cmd))
         self.stmt.make_asm(symbol_table, code, ctx)
 
-        code.append(else_stmt_lable)
+        code.append(asm.Lable(else_stmt_lable))
         self.else_stmt.make_asm(symbol_table, code, ctx)
 
 class Equals:
@@ -228,7 +272,7 @@ class Equals:
         res_reg = self.right.make_asm(symbol_table, code, ctx)
         free_reg = u.regs.alloc()
         if l_symbol.scope_type == u.ScopeType.LOCAL:
-            cmds = [asm.Minus(free_reg, u.regs.bp, imm=l_symbol.binding), asm.Str(res_reg, free_reg)]
+            cmds = [asm.Sub(free_reg, u.regs.bp, imm=l_symbol.binding), asm.Str(res_reg, free_reg)]
         else:
             cmds = [asm.Mov(free_reg, None, imm=l_symbol.binding), asm.Str(res_reg, free_reg)]
 
@@ -260,7 +304,7 @@ class Plus(ArithBinOp):
     op_cmd = asm.Add
 
 class Minus(ArithBinOp):
-    op_cmd = asm.Minus
+    op_cmd = asm.Sub
 
 class Mul(ArithBinOp):
     op_cmd = asm.Mul
@@ -302,7 +346,7 @@ class Identifier:
         res_reg = u.regs.alloc()
         free_reg = u.regs.alloc()
         if symbol.scope_type == u.ScopeType.LOCAL:
-            cmds = [asm.Minus(free_reg, u.regs.bp, imm=symbol.binding), asm.Ldr(res_reg, free_reg)]
+            cmds = [asm.Sub(free_reg, u.regs.bp, imm=symbol.binding), asm.Ldr(res_reg, free_reg)]
         else:
             cmds = [asm.Mov(free_reg, None, imm=symbol.binding), asm.Ldr(res_reg, free_reg)]
 

@@ -7,7 +7,7 @@ from symbol_table import SymbolTable
 
 
 def main():
-    file_name = 'm1.io'
+    file_name = 'm1.c'
     #if len(sys.argv) > 1:
     #    file_name = sys.argv[1]
     #else:
