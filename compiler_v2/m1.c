@@ -6,7 +6,8 @@ function(int l, int k)
 {
     int j = 2*2;
     int n = 2;
-    if (2 < function(2, 2)) {
+    if (2 < function(22, 2)) {
+        int oleg = 2;
         return m + k;
     }else {
         return 324;
@@ -19,7 +20,7 @@ rec(int n)
     if (n == 20){
         return 99;
     } else {
-        rec(n);
+        rec(rec(2));
     }
 };
 

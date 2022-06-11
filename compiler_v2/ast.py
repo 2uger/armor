@@ -99,7 +99,7 @@ class Declaration:
 
             # Collect local variables to create empty space on stack for them
             local_var_bp_offset = 0
-            for stmt in self.body:
+            for stmt in u.nested_traverse(self.body):
                 if isinstance(stmt, Declaration):
                     _decl = stmt.node.decl
                     # TODO: after add new types - change this
@@ -158,8 +158,8 @@ class FuncCall:
 
         # TODO: save registers in use, because it might store local variables
 
+        # TODO: check what args we pass, allow only var, func_call and numbers for now
         args_to_push = []
-
         for arg in self.args:
             args_to_push.append(arg.make_asm(symbol_table, code, ctx))
 
@@ -215,6 +215,12 @@ class Compound:
             return item
         raise StopIteration
 
+    def __len__(self):
+        return len(self.items)
+
+    def __getitem__(self, n):
+        return self.items[n]
+
 class Return:
     def __init__(self, ret_expr):
         self.ret_expr = ret_expr
@@ -251,6 +257,22 @@ class IfStatement:
 
         code.append(asm.Lable(else_stmt_lable))
         self.else_stmt.make_asm(symbol_table, code, ctx)
+
+    def __iter__(self):
+        self.if_n = 0
+        self.else_n = 0
+        return self
+
+    def __next__(self):
+        while self.if_n < len(self.stmt):
+            item = self.stmt[self.if_n]
+            self.if_n += 1
+            return item
+        while self.else_n < len(self.else_stmt):
+            item = self.else_stmt[self.else_n]
+            self.else_n += 1
+            return item
+        raise StopIteration
 
 class Equals:
     """Expression for assignment."""

@@ -15,13 +15,16 @@ def main():
         return
 
     # Tokenize stage
+    print('START TOKENIZE STAGE')
     create_tokens(file_name)
     # Parser stage
+    print('START PARSER STAGE')
     root = parse(0)
 
     symbol_table = SymbolTable()
     code = []
     ctx = Context()
+    print('START GENERATE ASM')
     try:
         root.make_asm(symbol_table, code, ctx)
     except Exception as e:

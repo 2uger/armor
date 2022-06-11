@@ -11,11 +11,6 @@ class ScopeType(enum.Enum):
     GLOBAL = 'global'
 
 # Describe C types
-class CTypeSpec(enum.Enum):
-    int = 'int'
-    char = 'char'
-    void = 'void'
-
 CType = namedtuple('CType', ['size'])
 CTypeInt = CType(4)
 CTypeChar = CType(2)
@@ -64,3 +59,17 @@ class Lable:
 static_storage = StaticStorage() 
 regs = Regs()
 lable = Lable()
+
+
+class CompilerException(Exception):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+def nested_traverse(itm):
+    """Traverse all nested iterables"""
+    try:
+        for i in iter(itm):
+            for j in nested_traverse(i):
+                yield j
+    except TypeError:
+        yield itm

@@ -1,3 +1,6 @@
+import ast
+import utils
+
 from tokens import *
 import ast as node
 
@@ -95,6 +98,8 @@ def parse_statements(index):
     for f in (parse_compound_stmt, parse_if_statement, parse_return, parse_var_decl):
         try:
             return f(index)
+        except utils.CompilerException as e:
+            raise e
         except Exception:
             continue
     return parse_expression_stmt(index)
@@ -107,7 +112,9 @@ def parse_compound_stmt(index):
         try:
             stmt_node, index = parse_statements(index)
             items.append(stmt_node)
-        except Exception as e:
+        except utils.CompilerException as e:
+            raise e
+        except Exception:
             break
 
     index = match_token(index, TokenKind.R_CRL_BRCKT)
@@ -192,6 +199,8 @@ def parse_primary(index):
         
         while True:
             arg, index = parse_assignment(index)
+            if not isinstance(arg, (ast.Identifier, ast.Number, ast.FuncCall)):
+                raise utils.CompilerException('Only variable, numbers, function call to function call')
             args.append(arg)
 
             if token_is(index, TokenKind.COMMA):
