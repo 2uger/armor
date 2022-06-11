@@ -31,7 +31,7 @@ def main():
         print(e.args[0])
         return
 
-    with open('a.out', 'w') as f:
+    with open('out.asm', 'w') as f:
         for c in code:
             if not isinstance(c, asm.Lable):
                 code = '    ' + str(c)
