@@ -31,11 +31,14 @@ def main():
         print(e.args[0])
         return
 
-    for c in code:
-        if not isinstance(c, asm.Lable):
-            print('    ' + str(c))
-        else:
-            print(c)
+    with open('a.out', 'w') as f:
+        for c in code:
+            if not isinstance(c, asm.Lable):
+                code = '    ' + str(c)
+            else:
+                code = str(c)
+            f.write(code)
+            f.write('\n')
 
 if __name__ == '__main__':
     main()
