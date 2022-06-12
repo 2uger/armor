@@ -1,4 +1,4 @@
-Compiler for C-like  
+Compiler for C-like language   
 Generate code straight to assembly  
 Main points:
 * Use simple techniques for code parsing and generation
