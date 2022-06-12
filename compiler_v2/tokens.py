@@ -83,5 +83,5 @@ def match_token(index, kind):
     if token_is(index, kind):
         return index + 1
     else:
-        raise Exception(f'Error matching token: {kind}, current token: {tokens[index].content}')
+        raise Exception(f'Error matching token: {kind}, current token: {tokens[index]}')
     

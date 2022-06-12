@@ -1,6 +1,8 @@
 from collections import namedtuple
 import enum
 
+messages = []
+
 class ScopeType(enum.Enum):
     """
     Would help to differentiate local and global variables memory binding.

@@ -4,19 +4,17 @@ import utils
 from tokens import *
 import ast as node
 
-messages = []
 
 def parse(index):
     items, index = parse_decl_list(index)
-    messages.append(f'MSG: successfully parse program' if node else f'ERROR: error while parsing program, check logs')
+    utils.messages.append(f'successfully parse program' if node else f'ERROR: error while parsing program, check logs')
     
     return node.Program(items)
 
 def parse_decl_list(index):
     items = []
-    while 1:
+    while True:
         if token_is(index, TokenKind.END):
-            messages.append('Successfull parsing')
             return items
         else:
             node, index = parse_decl(index)
@@ -74,7 +72,7 @@ def parse_type_spec(index):
     t = tokens[index]
     if token_in(index, (TokenKind.INT, TokenKind.VOID)):
         return t, index + 1
-    raise Exception(f'Unknown type spec: {t}')
+    raise Exception(f'unknown type spec: {t}')
 
 def parse_parms(index):
     items = []
@@ -200,7 +198,7 @@ def parse_primary(index):
         while True:
             arg, index = parse_assignment(index)
             if not isinstance(arg, (ast.Identifier, ast.Number, ast.FuncCall)):
-                raise utils.CompilerException('Only variable, numbers, function call to function call')
+                raise utils.CompilerException('only variable, numbers, function call to function call')
             args.append(arg)
 
             if token_is(index, TokenKind.COMMA):

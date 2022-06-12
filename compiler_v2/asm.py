@@ -45,7 +45,10 @@ class Mov(ASMCommand):
     cmd = 'mov'
 
     def __repr__(self):
-        return f'{self.cmd} {self.op_dest.reg}, ' + (f'{self.op1.reg}' if self.op1 else f'#{self.imm}')
+        if self.op1:
+            return f'{self.cmd} {self.op_dest.reg}, {self.op1.reg}'
+        else:
+            return f'ldr {self.op_dest.reg}, ={self.imm}'
 
 class Cmp(ASMCommand):
     cmd = 'cmp'
@@ -80,7 +83,7 @@ class B:
         self.cmp_cmd = cmp_cmd
 
     def __repr__(self):
-        return f'b{self.cmp_cmd} {self.location}'
+        return f'{self.cmd}{self.cmp_cmd} {self.location}'
 
 class BL(B):
     cmd = 'bl'
@@ -92,3 +95,10 @@ class BX:
 
     def __repr__(self):
         return f'bx{self.cmp_cmd} {self.location_reg.reg}'
+    
+class Data:
+    """Represent data fragment in asm output."""
+    def __init__(self, mem_binding, name, value):
+        self.mem_binding = mem_binding
+        self.name = name
+        self.value = value

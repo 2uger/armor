@@ -40,7 +40,7 @@ class Declaration:
             symbol = symbol_table.lookup(decl.identifier)
             if symbol:
                 if ctx.is_global:
-                    raise Exception(f'Multiple declaration for: {decl.identifier}')
+                    raise Exception(f'multiple declaration for: {decl.identifier}')
                 # Already declared variable inside function, just need to generate code for them
                 elif not ctx.is_global and init:
                     res_reg = init.make_asm(symbol_table, code, ctx)
@@ -56,8 +56,14 @@ class Declaration:
             mem_binding = utils.static_storage.place(None, c_type.size)
             symbol_table.add_symbol(decl.identifier, c_type, mem_binding, utils.ScopeType.GLOBAL)
 
-            # Generate code if variable got initialised
-            if init:
+            # Global variable - compile time
+            if ctx.is_global:
+                if init:
+                    res_value = init.make_asm(symbol_table, code, ctx)
+                    code.insert(0, asm.Data(mem_binding, decl.identifier, res_value))
+                else:
+                    code.insert(0, asm.Data(mem_binding, decl.identifier, 0x0))
+            elif not ctx.is_global and init:
                 res_reg = init.make_asm(symbol_table, code, ctx)
                 free_reg = utils.regs.alloc()
                 code.extend([asm.Mov(free_reg, None, imm=mem_binding), asm.Str(res_reg, free_reg)])
@@ -107,20 +113,21 @@ class Declaration:
                     symbol_table.add_symbol(_decl.identifier, c_type, local_var_bp_offset, utils.ScopeType.LOCAL)
                     local_var_bp_offset += c_type.size
 
-            code.extend(['\n', asm.Lable(decl.identifier),
+            code.extend([asm.Lable(decl.identifier.identifier),
                          asm.Push([utils.regs.bp]),
                          asm.Mov(utils.regs.bp, utils.regs.sp),
                          asm.Sub(utils.regs.sp, utils.regs.sp, imm=local_var_bp_offset)],)
             self.body.make_asm(symbol_table, code, ctx)
 
             symbol_table.close_scope()
+            ctx.set_global(True)
         else:
-            raise Exception(f'Bullshit declaration: {self}')
+            raise Exception(f'bullshit declaration: {self}')
 
 class DeclarationRoot:
     def __init__(self, spec, decl, init=None):
         """
-        Param:
+        Params:
         spec - specifier like int, char
         decl - declaration of the symbol, it might be Identifier or Function
         init - initial value
@@ -147,6 +154,8 @@ class FuncCall:
         self.args = args
 
     def make_asm(self, symbol_table: SymbolTable, code, ctx):
+        if ctx.is_global:
+            raise Exception(f'can\'t call function in global context')
         # Check that function we call exists
         # and parameters amount is equal to args amount
         func_symbol = symbol_table.lookup(self.func)
@@ -193,7 +202,6 @@ class Compound:
 
     def make_asm(self, symbol_table, code, ctx):
         for item in self.items:
-            print(item)
             item.make_asm(symbol_table, code, ctx)
 
     def __repr__(self):
@@ -229,7 +237,7 @@ class Return:
 
     def make_asm(self, symbol_table, code, ctx):
         if ctx.return_type == utils.CTypeVoid:
-            raise Exception(f'Void function should not return: {self.ret_expr}')
+            raise Exception(f'void function should not return: {self.ret_expr}')
         res_reg = self.ret_expr.make_asm(symbol_table, code, ctx)
         free_reg = utils.regs.alloc()
         # Store result in return value place
@@ -246,7 +254,7 @@ class IfStatement:
 
     def make_asm(self, symbol_table, code, ctx):
         if not isinstance(self.cond, Relational):
-            raise Exception('Can handle only relational conditional inside if statement')
+            raise Exception(f'can handle only relational conditional inside if statement: {self.cond}')
 
         self.cond.make_asm(symbol_table, code, ctx)
 
@@ -285,10 +293,10 @@ class Equals:
 
     def make_asm(self, symbol_table, code, ctx):
         if not isinstance(self.left, Identifier):
-            raise Exception('Only identifier could be on left side of equal sign')
+            raise Exception('only identifier could be on left side of equal sign')
         l_symbol = symbol_table.lookup(self.left.identifier)
         if not l_symbol:
-            raise Exception('Reference before assignment')
+            raise Exception(f'reference before assignment: {self.left.identifier}')
 
         res_reg = self.right.make_asm(symbol_table, code, ctx)
         free_reg = utils.regs.alloc()
@@ -310,6 +318,16 @@ class ArithBinOp:
         self.op = op
 
     def make_asm(self, symbol_table, code, ctx):
+        if ctx.is_global:
+            l_val = self.left.make_asm(symbol_table, code, ctx)
+            r_val = self.right.make_asm(symbol_table, code, ctx)
+            operation = {
+                asm.Add: lambda x, y: x + y,
+                asm.Sub: lambda x, y: x -y,
+                asm.Mul: lambda x, y: x * y
+            }.get(self.op_cmd)
+            return operation(l_val, r_val)
+
         l_res_reg = self.left.make_asm(symbol_table, code, ctx)
         r_res_reg = self.right.make_asm(symbol_table, code, ctx)
 
@@ -354,15 +372,16 @@ class Equal(Relational):
 class Identifier:
     def __init__(self, identifier):
         self.identifier = identifier
-        super().__init__()
 
     def __repr__(self):
-        return f'Identifier: {self.identifier}'
+        return f'{self.identifier}'
 
     def make_asm(self, symbol_table: SymbolTable, code, ctx):
+        if ctx.is_global:
+            raise Exception('can\'t use variable in global context')
         symbol = symbol_table.lookup(self.identifier)
         if not symbol:
-            raise Exception('Reference before assignment')
+            raise Exception(f'reference before assignment: {self.identifier}')
 
         res_reg = utils.regs.alloc()
         free_reg = utils.regs.alloc()
@@ -379,12 +398,13 @@ class Identifier:
 class Number:
     def __init__(self, number):
         self.number = number
-        super().__init__()
 
     def __repr__(self):
         return f'Number: {self.number}'
 
     def make_asm(self, symbol_table, code, ctx):
+        if ctx.is_global:
+            return self.number
         reg = utils.regs.alloc()
         code.append(asm.Mov(reg, None, imm=self.number))
         return reg

@@ -1,6 +1,3 @@
-int m = 2 + 12;
-int n = 21 + 2;
-
 int
 function(int l, int k)
 {
@@ -8,21 +5,23 @@ function(int l, int k)
     int n = 2;
     if (2 < function(22, 2)) {
         int oleg = 2;
-        return m + k;
+        return k;
     }else {
         return 324;
     }
 };
-
 int
 rec(int n)
 {
-    if (n == 20){
+    if (n){
         return 99;
     } else {
         rec(rec(2));
     }
 };
+
+int m = 2; 
+int n = 21 + 2;
 
 int
 main()
