@@ -5,7 +5,6 @@ import typing as t
 
 
 class ASMCommand:
-
     cmd = None
 
     def __init__(self, op_dest: Register, op1: Register, op2: t.Optional[Register]=None, imm=0):
