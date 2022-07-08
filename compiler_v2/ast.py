@@ -49,9 +49,7 @@ class Declaration:
                     utils.regs.dealloc_many([res_reg, free_reg])
                     return
 
-            # TODO: after add new types - change this
-            c_type = utils.CTypeInt
-
+            c_type = utils.get_c_type(spec)
             # global variable declaration - it's located in static storage
             mem_binding = utils.static_storage.place(None, c_type.size)
             symbol_table.add_symbol(decl.identifier, c_type, mem_binding, utils.ScopeType.GLOBAL)
@@ -69,16 +67,14 @@ class Declaration:
                 code.extend([asm.Mov(free_reg, None, imm=mem_binding), asm.Str(res_reg, free_reg)])
                 utils.regs.dealloc_many([res_reg, free_reg])
         elif isinstance(decl, Function):
-            return_c_type = {tokens.TokenKind.VOID: utils.CTypeVoid,
-                             tokens.TokenKind.INT: utils.CTypeInt}.get(spec.kind)
+            return_c_type = utils.get_c_type(spec)
             ctx.set_return(return_c_type)
             ctx.set_global(False)
 
             # Collect function parameters
             parms_list = []
             for parm in decl.parms:
-                # TODO: after add new types - change this
-                c_type = utils.CTypeInt
+                c_type = utils.get_c_type(parm.spec)
                 parm_name = parm.decl.identifier
                 parms_list.append((c_type, parm_name))
             symbol_table.add_symbol(decl.identifier.identifier, return_c_type, None, utils.ScopeType.GLOBAL, parms_list)
@@ -99,7 +95,7 @@ class Declaration:
 
             for parm in decl.parms:
                 parm_name = parm.decl.identifier
-                c_type = utils.CTypeInt
+                c_type = utils.get_c_type(parm.spec)
                 symbol_table.add_symbol(parm_name, c_type, bp_offset, utils.ScopeType.LOCAL)
                 bp_offset -= c_type.size
 
@@ -107,10 +103,8 @@ class Declaration:
             local_var_bp_offset = 0
             for stmt in utils.nested_traverse(self.body):
                 if isinstance(stmt, Declaration):
-                    _decl = stmt.node.decl
-                    # TODO: after add new types - change this
-                    c_type = utils.CTypeInt
-                    symbol_table.add_symbol(_decl.identifier, c_type, local_var_bp_offset, utils.ScopeType.LOCAL)
+                    c_type = utils.get_c_type(stmt.node.spec)
+                    symbol_table.add_symbol(stmt.node.decl.identifier, c_type, local_var_bp_offset, utils.ScopeType.LOCAL)
                     local_var_bp_offset += c_type.size
 
             code.extend([asm.Lable(decl.identifier.identifier),

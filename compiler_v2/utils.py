@@ -1,6 +1,8 @@
 from collections import namedtuple
 import enum
 
+import tokens
+
 messages = []
 
 class ScopeType(enum.Enum):
@@ -62,7 +64,6 @@ static_storage = StaticStorage()
 regs = Regs()
 lable = Lable()
 
-
 class CompilerException(Exception):
     def __init__(self, *args):
         super().__init__(*args)
@@ -75,3 +76,10 @@ def nested_traverse(itm):
                 yield j
     except TypeError:
         yield itm
+
+def get_c_type(token):
+    """Return CType."""
+    return {
+        tokens.TokenKind.INT: CTypeInt,
+        tokens.TokenKind.VOID: CTypeVoid,
+    }.get(token.kind)
