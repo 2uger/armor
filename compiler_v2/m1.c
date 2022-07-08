@@ -13,7 +13,7 @@ function(int l, int k)
 int
 rec(int n)
 {
-    if (n){
+    if (function(2, 3)){
         return 99;
     } else {
         rec(rec(2));

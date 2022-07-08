@@ -33,7 +33,7 @@ def main():
     except Exception as e:
         RED_COLOR = '\033[91m'
         RESET = '\033[0m'
-        print(RED_COLOR + e.args[0] + RESET)
+        print('ERROR: ', RED_COLOR + e.args[0] + RESET)
         return
 
     with open(file_out, 'w') as f:

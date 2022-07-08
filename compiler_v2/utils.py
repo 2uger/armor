@@ -56,7 +56,7 @@ class Lable:
 
     def get(self):
         self.n += 1
-        return f'l{self.n}'
+        return f'LBL_{self.n}'
 
 static_storage = StaticStorage() 
 regs = Regs()

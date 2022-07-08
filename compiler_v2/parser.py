@@ -8,7 +8,6 @@ import ast as node
 def parse(index):
     items, index = parse_decl_list(index)
     utils.messages.append(f'successfully parse program' if node else f'ERROR: error while parsing program, check logs')
-    
     return node.Program(items)
 
 def parse_decl_list(index):

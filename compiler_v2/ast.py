@@ -254,12 +254,19 @@ class IfStatement:
 
     def make_asm(self, symbol_table, code, ctx):
         if not isinstance(self.cond, Relational):
-            raise Exception(f'can handle only relational conditional inside if statement: {self.cond}')
-
-        self.cond.make_asm(symbol_table, code, ctx)
+            # Everything is True inside if statement if result of expression > 0
+            res_reg = self.cond.make_asm(symbol_table, code, ctx)
+            free_reg = utils.regs.alloc()
+            code.extend([asm.Mov(free_reg, None, imm=0),
+                         asm.Cmp(None, res_reg, free_reg)])
+            utils.regs.dealloc_many([res_reg, free_reg])
+            cmp_cmd = 'gt'
+        else:
+            self.cond.make_asm(symbol_table, code, ctx)
+            cmp_cmd = self.cond.cmp_cmd
 
         else_stmt_lable = utils.lable.get()
-        code.append(asm.B(else_stmt_lable, self.cond.cmp_cmd))
+        code.append(asm.B(else_stmt_lable, cmp_cmd))
         self.stmt.make_asm(symbol_table, code, ctx)
 
         code.append(asm.Lable(else_stmt_lable))
@@ -271,6 +278,7 @@ class IfStatement:
         return self
 
     def __next__(self):
+        """To be able to iterate through all expressions."""
         while self.if_n < len(self.stmt):
             item = self.stmt[self.if_n]
             self.if_n += 1
@@ -323,7 +331,7 @@ class ArithBinOp:
             r_val = self.right.make_asm(symbol_table, code, ctx)
             operation = {
                 asm.Add: lambda x, y: x + y,
-                asm.Sub: lambda x, y: x -y,
+                asm.Sub: lambda x, y: x - y,
                 asm.Mul: lambda x, y: x * y
             }.get(self.op_cmd)
             return operation(l_val, r_val)
@@ -364,7 +372,7 @@ class LessThan(Relational):
     cmp_cmd = 'lt'
 
 class BiggerThan(Relational):
-    cmp_cmd = 'bt'
+    cmp_cmd = 'gt'
 
 class Equal(Relational):
     cmp_cmd = 'eq'
