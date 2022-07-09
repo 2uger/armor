@@ -14,13 +14,14 @@ int
 rec(int n)
 {
     if (function(2, 3)){
+        rec(2);
         return 99;
     } else {
         rec(rec(2));
     }
 };
 
-int m = 2; 
+int m = 2322343243243242; 
 int n = 21 + 2;
 
 int

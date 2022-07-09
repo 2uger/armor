@@ -182,15 +182,14 @@ class FuncCall:
         code.append(asm.BL(self.func))
 
         # Collect return value
+        # Clean up stack from arguments
+        # TODO: count total arguments size, when use new type
         free_reg = utils.regs.alloc()
         res_reg = utils.regs.alloc()
         code.extend([asm.Sub(free_reg, utils.regs.sp, imm=4 * 2),
-                     asm.Str(res_reg, free_reg)])
+                     asm.Str(res_reg, free_reg),
+                     asm.Sub(utils.regs.sp, utils.regs.sp, imm=4 * 3 + utils.CTypeInt.size * len(args_to_push))])
         utils.regs.dealloc(free_reg)
-
-        # TODO: count total arguments size, when use new type
-        # Clean up stack from arguments
-        code.append(asm.Sub(utils.regs.sp, utils.regs.sp, imm=4 * 3 + utils.CTypeInt.size * len(args_to_push)))
 
         return res_reg
 
@@ -315,9 +314,11 @@ class Equals:
         res_reg = self.right.make_asm(symbol_table, code, ctx)
         free_reg = utils.regs.alloc()
         if l_symbol.scope_type == utils.ScopeType.LOCAL:
-            cmds = [asm.Sub(free_reg, utils.regs.bp, imm=l_symbol.binding), asm.Str(res_reg, free_reg)]
+            cmds = [asm.Sub(free_reg, utils.regs.bp, imm=l_symbol.binding),
+                    asm.Str(res_reg, free_reg)]
         else:
-            cmds = [asm.Mov(free_reg, None, imm=l_symbol.binding), asm.Str(res_reg, free_reg)]
+            cmds = [asm.Mov(free_reg, None, imm=l_symbol.binding),
+                    asm.Str(res_reg, free_reg)]
 
         code.extend(cmds)
         utils.regs.dealloc_many([res_reg, free_reg])
@@ -332,6 +333,7 @@ class ArithBinOp:
         self.op = op
 
     def make_asm(self, symbol_table, code, ctx):
+        # As soon as in global scope all variables should be computed at compile time
         if ctx.is_global:
             l_val = self.left.make_asm(symbol_table, code, ctx)
             r_val = self.right.make_asm(symbol_table, code, ctx)
@@ -341,14 +343,14 @@ class ArithBinOp:
                 asm.Mul: lambda x, y: x * y
             }.get(self.op_cmd)
             return operation(l_val, r_val)
+        else:
+            l_res_reg = self.left.make_asm(symbol_table, code, ctx)
+            r_res_reg = self.right.make_asm(symbol_table, code, ctx)
 
-        l_res_reg = self.left.make_asm(symbol_table, code, ctx)
-        r_res_reg = self.right.make_asm(symbol_table, code, ctx)
-
-        res_reg = utils.regs.alloc()
-        code.append(self.op_cmd(res_reg, l_res_reg, r_res_reg))
-        utils.regs.dealloc_many([l_res_reg, r_res_reg])
-        return res_reg
+            res_reg = utils.regs.alloc()
+            code.append(self.op_cmd(res_reg, l_res_reg, r_res_reg))
+            utils.regs.dealloc_many([l_res_reg, r_res_reg])
+            return res_reg
     
     def __repr__(self):
         return f'{self.left} {self.op} {self.right}'
@@ -392,8 +394,8 @@ class Identifier:
 
     def make_asm(self, symbol_table: SymbolTable, code, ctx):
         if ctx.is_global:
-            # Means we use variable as right value
-            raise Exception('can\'t use variable in global context')
+            # Variable couldn't be used as right value in global scope
+            raise Exception('can\'t use variable in global scope as right value')
         symbol = symbol_table.lookup(self.identifier)
         if not symbol:
             raise Exception(f'reference before assignment: {self.identifier}')
@@ -418,6 +420,8 @@ class Number:
         return f'Number: {self.number}'
 
     def make_asm(self, symbol_table, code, ctx):
+        if self.number >= 2 ** (32):
+            raise Exception('can handle only 4 bytes integer')
         if ctx.is_global:
             return self.number
         reg = utils.regs.alloc()
