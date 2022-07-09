@@ -1,6 +1,5 @@
 import utils
 import asm
-import tokens
 
 from symbol_table import SymbolTable
 from context import Context
@@ -54,7 +53,7 @@ class Declaration:
             mem_binding = utils.static_storage.place(None, c_type.size)
             symbol_table.add_symbol(decl.identifier, c_type, mem_binding, utils.ScopeType.GLOBAL)
 
-            # Global variable - compile time
+            # Global variable - compile time computation
             if ctx.is_global:
                 if init:
                     res_value = init.make_asm(symbol_table, code, ctx)
@@ -71,32 +70,36 @@ class Declaration:
             ctx.set_return(return_c_type)
             ctx.set_global(False)
 
-            # Collect function parameters
+            """
+            Stack for function call:
+
+            arg-1
+            arg-2
+            ...
+            arg-n
+            ret_value
+            ret_address
+            old_bp <- BP - frame pointer for current function points here
+            """
+
+            parms_total_size = 0
             parms_list = []
             for parm in decl.parms:
                 c_type = utils.get_c_type(parm.spec)
-                parm_name = parm.decl.identifier
-                parms_list.append((c_type, parm_name))
+                # Collect parms list for function slot in symbol table
+                parms_list.append((c_type, parm.decl.identifier))
+                parms_total_size += c_type.size
+                
             symbol_table.add_symbol(decl.identifier.identifier, return_c_type, None, utils.ScopeType.GLOBAL, parms_list)
             symbol_table.open_scope()
 
-            # STACK:
-            # arg-1
-            # arg-2
-            # ...
-            # arg-n
-            # ret_value
-            # ret_address
-            # old_bp
-            # BP - frame pointer for current function points here
-
             # bp offset for first argument = old_bp + red_address + ret_value + len(args) * size
-            bp_offset = 4 + 4 + 4 + utils.CTypeInt.size * len(decl.parms)
+            bp_offset = 4 + 4 + return_c_type.size + parms_total_size
 
             for parm in decl.parms:
-                parm_name = parm.decl.identifier
                 c_type = utils.get_c_type(parm.spec)
-                symbol_table.add_symbol(parm_name, c_type, bp_offset, utils.ScopeType.LOCAL)
+                # Place parameter itself into symbol table
+                symbol_table.add_symbol(parm.decl.identifier, c_type, bp_offset, utils.ScopeType.LOCAL)
                 bp_offset -= c_type.size
 
             # Collect local variables to create empty space on stack for them
@@ -104,8 +107,8 @@ class Declaration:
             for stmt in utils.nested_traverse(self.body):
                 if isinstance(stmt, Declaration):
                     c_type = utils.get_c_type(stmt.node.spec)
-                    symbol_table.add_symbol(stmt.node.decl.identifier, c_type, local_var_bp_offset, utils.ScopeType.LOCAL)
                     local_var_bp_offset += c_type.size
+                    symbol_table.add_symbol(stmt.node.decl.identifier, c_type, local_var_bp_offset, utils.ScopeType.LOCAL)
 
             code.extend([asm.Lable(decl.identifier.identifier),
                          asm.Push([utils.regs.bp]),
@@ -150,10 +153,12 @@ class FuncCall:
     def make_asm(self, symbol_table: SymbolTable, code, ctx):
         if ctx.is_global:
             raise Exception(f'can\'t call function in global context')
-        # Check that function we call exists
-        # and parameters amount is equal to args amount
+        # Check that function we call exists and parameters amount is equal to args amount
         func_symbol = symbol_table.lookup(self.func)
         if func_symbol:
+
+            # TODO: check also arguments and parameters types, when add new type
+
             if not len(self.args) == len(func_symbol.parms_list):
                 raise Exception(f'wrong amount of arguments to function: {func_symbol.name}')
         else:
@@ -169,19 +174,23 @@ class FuncCall:
         if args_to_push:
             code.append(asm.Push(args_to_push))
             utils.regs.dealloc_many(args_to_push)
+        
+        return_value_size = func_symbol.c_type.size
         # Push space for return value
-        code.append(asm.Add(utils.regs.sp, utils.regs.sp, imm=utils.CTypeInt.size))
+        code.append(asm.Add(utils.regs.sp, utils.regs.sp, imm=return_value_size))
         # Call function
         code.append(asm.BL(self.func))
 
         # Collect return value
         free_reg = utils.regs.alloc()
         res_reg = utils.regs.alloc()
-        code.extend([asm.Sub(free_reg, utils.regs.sp, imm=utils.CTypeInt.size), asm.Str(res_reg, free_reg)])
+        code.extend([asm.Sub(free_reg, utils.regs.sp, imm=4 * 2),
+                     asm.Str(res_reg, free_reg)])
         utils.regs.dealloc(free_reg)
 
+        # TODO: count total arguments size, when use new type
         # Clean up stack from arguments
-        code.append(asm.Sub(utils.regs.sp, utils.regs.sp, imm=4 * 2 + utils.CTypeInt.size * len(args_to_push)))
+        code.append(asm.Sub(utils.regs.sp, utils.regs.sp, imm=4 * 3 + utils.CTypeInt.size * len(args_to_push)))
 
         return res_reg
 
@@ -235,9 +244,12 @@ class Return:
         res_reg = self.ret_expr.make_asm(symbol_table, code, ctx)
         free_reg = utils.regs.alloc()
         # Store result in return value place
-        code.extend([asm.Sub(free_reg, utils.regs.bp, imm=utils.CTypeInt.size * 2), asm.Str(res_reg, free_reg)])
+        code.extend([asm.Sub(free_reg, utils.regs.bp, imm=4 * 2),
+                     asm.Str(res_reg, free_reg)])
         # Return from function
-        code.extend([asm.Pop([utils.regs.bp, free_reg]), asm.BX(free_reg)])
+        code.extend([asm.Mov(utils.regs.sp, utils.regs.bp),
+                     asm.Pop([utils.regs.bp, free_reg]),
+                     asm.BX(free_reg)])
         utils.regs.dealloc_many([res_reg, free_reg])
 
 class IfStatement:
@@ -380,6 +392,7 @@ class Identifier:
 
     def make_asm(self, symbol_table: SymbolTable, code, ctx):
         if ctx.is_global:
+            # Means we use variable as right value
             raise Exception('can\'t use variable in global context')
         symbol = symbol_table.lookup(self.identifier)
         if not symbol:
