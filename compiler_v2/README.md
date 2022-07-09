@@ -9,7 +9,7 @@ Compiler for C-like language.
   - Function calls and returns
 
 ### CPU architecture specs:
-* Use stack for pass variables to function and local variables
+* Use stack to pass variables to function and local variables
 * r0-r13, sp, bp, pc  
  bp - frame pointer, point to the beginning of the function's stack
 
