@@ -1,6 +1,7 @@
 import ast
 import utils
 
+from lexer import tokens
 from tokens import *
 import ast as node
 

@@ -4,7 +4,7 @@ import asm
 import utils
 from context import Context
 from parser import parse
-from tokens import create_tokens
+from tokens import create_tokens, tokens
 from symbol_table import SymbolTable
 
 
@@ -31,6 +31,7 @@ def main():
         utils.messages.append('GENERATING ASM')
         root.make_asm(symbol_table, code, ctx)
     except Exception as e:
+        raise e
         RED_COLOR = '\033[91m'
         RESET = '\033[0m'
         print('ERROR: ', RED_COLOR + e.args[0] + RESET)

@@ -1,5 +1,4 @@
 import enum
-import tokenize
 
 tokens = []
 
@@ -22,6 +21,7 @@ class TokenKind(enum.Enum):
     KEYWORD = 'keyword'
     SYMBOL = 'symbol'
 
+    # Key words
     VOID = 'void'
     INT = 'int'
     BOOL = 'bool'
@@ -51,27 +51,68 @@ class TokenKind(enum.Enum):
     EQ = '=='
 
 def create_tokens(file_name):
-    global tokens
-    with open(file_name, 'rb') as f:
-        _tokens = tokenize.tokenize(f.readline)
+    with open(file_name, 'r') as f:
+        line = f.readline()
+        while line != '':
+            lexify_string(line)
+            line = f.readline()
+    tokens.append(Token(TokenKind.END))
 
-        if _tokens is None:
-            return False
+def lexify_string(line):
+    if line[len(line) - 1] != '\n':
+        line = line + '\n'
+    curr_p, start_p = 0, 0
+    s = line[curr_p]
+    while (s != '\n'):
+        token = None
+        if (s == ','): token = Token(TokenKind.COMMA)
+        elif (s == ':'): token = Token(TokenKind.COLON)
+        elif (s == ';'): token = Token(TokenKind.SEMICOLON)
+        elif (s == '['): token = Token(TokenKind.L_SQR_BRCKT)
+        elif (s == ']'): token = Token(TokenKind.R_SQR_BRCKT)
+        elif (s == '{'): token = Token(TokenKind.L_CRL_BRCKT)
+        elif (s == '}'): token = Token(TokenKind.R_CRL_BRCKT)
+        elif (s == '('): token = Token(TokenKind.L_PAREN)
+        elif (s == ')'): token = Token(TokenKind.R_PAREN)
+        elif (s == '+'): token = Token(TokenKind.PLUS)
+        elif (s == '-'): token = Token(TokenKind.MINUS)
+        elif (s == '*'): token = Token(TokenKind.MUL)
+        elif (s == '/'): token = Token(TokenKind.DIV)
+        elif (s == '>'): token = Token(TokenKind.BT)
+        elif (s == '<'): token = Token(TokenKind.LT)
+        elif (s == '='):
+            if line[curr_p + 1] == '=':
+                curr_p += 1
+                token = Token(TokenKind.EQ)
+            token = Token(TokenKind.EQUAL_TO)
+        # Identifier
+        elif ((s >= 'a' and s <= 'z') or (s >= 'A' and s <= 'Z') or (s == '_')):
+            curr_p += 1
+            s = line[curr_p]
+            while ((s >= 'a' and s <= 'z') or (s >= 'A' and s <= 'Z') or (s == '_') or (s >= '1' and s <= '9') and curr_p < len(line) - 1):
+                curr_p += 1
+                s = line[curr_p]
+            curr_p -= 1
+            lex = line[start_p: curr_p + 1]
+            try:
+                t_kind = TokenKind(lex)
+                token = Token(t_kind)
+            except ValueError:
+                token = Token(TokenKind.IDENTIFIER, lex)
+        # Numbers
+        elif (s >= '1' and s <= '9'):
+            while (s >= '1' and s <= '9' and curr_p < len(line) - 1):
+                curr_p += 1
+                s = line[curr_p]
+            curr_p -= 1
+            token = Token(TokenKind.NUMCONST, int(line[start_p: curr_p + 1]))
 
-        for t in _tokens:
-            if t.type in (1, 2, 54):
-                try:
-                    if t.type == 2:
-                        n_t = Token(TokenKind.NUMCONST, int(t.string))
-                    else:
-                        t_kind = TokenKind(t.string)
-                        n_t = Token(t_kind)
-                except ValueError:
-                    n_t = Token(TokenKind.IDENTIFIER, t.string)
-                tokens.append(n_t)
-        tokens.append(Token(TokenKind.END))
+        curr_p += 1
+        start_p = curr_p
+        s = line[curr_p]
 
-    return True
+        if token:
+            tokens.append(token)
 
 def token_is(index, kind):
     return len(tokens) > index and tokens[index].kind == kind
