@@ -1,5 +1,3 @@
-"""Assembly commands"""
-
 from utils import Register
 import typing as t
 
