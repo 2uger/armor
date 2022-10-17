@@ -5,7 +5,8 @@ import utils
 from context import Context
 from parser import parse
 from tokens import create_tokens, tokens
-from symbol_table import SymbolTable
+from symbol_table import SymbolTable, NewSymbolTable
+from ir import IRGen
 
 
 def main():
@@ -25,11 +26,18 @@ def main():
         utils.messages.append('PARSER STAGE')
         root = parse(0)
 
+        new_symbol_table = NewSymbolTable()
         symbol_table = SymbolTable()
         code = []
+        ir_gen = IRGen()
         ctx = Context()
         utils.messages.append('GENERATING ASM')
         root.make_asm(symbol_table, code, ctx)
+        root.make_ir(new_symbol_table, ir_gen, ctx)
+        for func_name, cmds in ir_gen.cmds.items():
+            print(func_name)
+            for c in cmds:
+                print(f'\t{c}')
     except Exception as e:
         raise e
         RED_COLOR = '\033[91m'

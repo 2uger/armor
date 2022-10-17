@@ -26,3 +26,10 @@ Compiler for C-like language.
 - Add char type, make it different size
 - Count every expression inside if statement
 - Else lables same everywhere, need new ones for every if..else [+]
+
+## TODO:
+* Semantic analysis:
+  * Type checking(comparison, bin operations, assignment)
+* Stack frame:
+  * Declaration of local variables only on the function entry(to simplifiy search of variables in function)
+  * Create ADT for function frame to store parameters and local variables and it's location(register or memory)

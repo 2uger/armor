@@ -1,13 +1,16 @@
+import ir
 import utils
 import asm
 
-from symbol_table import SymbolTable
+from symbol_table import NewSymbolTable, SymbolTable
 from context import Context
 
 
 class EmptyNode:
     """Empty node."""
     def make_asm(self, *args, **kwargs):
+        pass
+    def make_ir(self, *args, **kwargs):
         pass
 
 class Program:
@@ -19,16 +22,35 @@ class Program:
         for n in self.nodes:
             n.make_asm(symbol_table, code, ctx)
 
+    def make_ir(self, symbol_table, ir_gen, ctx):
+        for n in self.nodes:
+            n.make_ir(symbol_table, ir_gen, ctx)
+
 class Declaration:
     def __init__(self, node, body=None):
-        """
-        body - only for functions
-        """
         self.node = node
+        # only for function declaration
         self.body = body
     
     def __repr__(self):
         return f'{self.node}: {self.body}'
+
+    def make_ir(self, symbol_table: NewSymbolTable, ir_gen: ir.IRGen, ctx):
+        spec = self.node.spec
+        decl = self.node.decl
+        init = self.node.init
+        if isinstance(decl, Identifier):
+            dst = symbol_table.add_variable(decl.identifier)
+            res = init.make_ir(symbol_table, ir_gen, ctx)
+            if not ctx.is_global:
+                ir_gen.register_variable(dst)
+                ir_gen.add(ir.Set(dst, res))
+        elif isinstance(decl, Function):
+            ctx.set_global(False)
+            ir_gen.new_func(decl.identifier.identifier)
+            for parm in decl.parms:
+                symbol_table.add_variable(parm.decl.identifier)
+            self.body.make_ir(symbol_table, ir_gen, ctx)
 
     def make_asm(self, symbol_table: SymbolTable, code, ctx: Context):
         spec = self.node.spec
@@ -150,6 +172,10 @@ class FuncCall:
         self.func = func
         self.args = args
 
+    def make_ir(self, symbol_table, ir_gen, ctx):
+        args = [arg.make_ir(symbol_table, ir_gen, ctx) for arg in self.args]
+        ir_gen.add(ir.FuncCall(self.func, args))
+
     def make_asm(self, symbol_table: SymbolTable, code, ctx):
         if ctx.is_global:
             raise Exception(f'can\'t call function in global context')
@@ -199,12 +225,17 @@ class ExprStmt:
         self.expr = expr
 
 class Compound:
+    """List of expressions."""
     def __init__(self, items):
         self.items = items
 
     def make_asm(self, symbol_table, code, ctx):
         for item in self.items:
             item.make_asm(symbol_table, code, ctx)
+
+    def make_ir(self, symbol_table, ir_gen, ctx):
+        for item in self.items:
+            item.make_ir(symbol_table, ir_gen, ctx)
 
     def __repr__(self):
         r = '{\n'
@@ -237,6 +268,10 @@ class Return:
     def __repr__(self):
         return f'return {self.ret_expr}'
 
+    def make_ir(self, symbol_table, ir_gen, ctx):
+        out = self.ret_expr.make_ir(symbol_table, ir_gen, ctx)
+        ir_gen.add(ir.Return(out))
+
     def make_asm(self, symbol_table, code, ctx):
         if ctx.return_type == utils.CTypeVoid:
             raise Exception(f'void function should not return: {self.ret_expr}')
@@ -256,6 +291,9 @@ class IfStatement:
         self.cond = cond
         self.stmt = stmt
         self.else_stmt = else_stmt
+
+    def make_ir(self, symbol_table, ir_gen, ctx):
+        pass
 
     def make_asm(self, symbol_table, code, ctx):
         if not isinstance(self.cond, Relational):
@@ -304,6 +342,11 @@ class Equals:
     def __repr__(self):
         return f'{self.left} {self.op} {self.right}'
 
+    def make_ir(self, symbol_table, ir_gen, ctx):
+        dst = symbol_table.lookup(self.left.identifier)
+        res = self.right.make_ir(symbol_table, ir_gen, ctx)
+        ir_gen.add(ir.Set(dst, res))
+
     def make_asm(self, symbol_table, code, ctx):
         if not isinstance(self.left, Identifier):
             raise Exception('only identifier could be on left side of equal sign')
@@ -326,14 +369,26 @@ class Equals:
 ### Expressions
 class ArithBinOp:
     op_cmd = None
+    ir_cmd = None
 
     def __init__(self, left, right, op):
         self.left = left
         self.right = right
         self.op = op
 
+    def make_ir(self, symbol_table, ir_gen, ctx):
+        """Create ir code for binary operation."""
+        out = ir.IRValue()
+        l_val = self.left.make_ir(symbol_table, ir_gen, ctx)
+        r_val = self.right.make_ir(symbol_table, ir_gen, ctx)
+        ir_cmd = self.ir_cmd(out, l_val, r_val)
+        ir_gen.add(ir_cmd)
+
+        return out
+
     def make_asm(self, symbol_table, code, ctx):
         # As soon as in global scope all variables should be computed at compile time
+        # otherwise we will raise exception
         if ctx.is_global:
             l_val = self.left.make_asm(symbol_table, code, ctx)
             r_val = self.right.make_asm(symbol_table, code, ctx)
@@ -357,12 +412,15 @@ class ArithBinOp:
 
 class Plus(ArithBinOp):
     op_cmd = asm.Add
+    ir_cmd = ir.IRAdd
 
 class Minus(ArithBinOp):
     op_cmd = asm.Sub
+    ir_cmd = ir.IRSub
 
 class Mul(ArithBinOp):
     op_cmd = asm.Mul
+    ir_cmd = ir.IRMul
 
 class Relational(ArithBinOp):
     cmp_cmd = None
@@ -392,6 +450,12 @@ class Identifier:
     def __repr__(self):
         return f'{self.identifier}'
 
+    def make_ir(self, symbol_table, ir_gen, ctx):
+        var = symbol_table.lookup(self.identifier)
+        if not var:
+            raise Exception(f'unregistered identifier: {self.identifier}')
+        return var
+
     def make_asm(self, symbol_table: SymbolTable, code, ctx):
         if ctx.is_global:
             # Variable couldn't be used as right value in global scope
@@ -418,6 +482,9 @@ class Number:
 
     def __repr__(self):
         return f'Number: {self.number}'
+
+    def make_ir(self, symbol_table, ir_gen, ctx):
+        return ir.IRValue(self.number)
 
     def make_asm(self, symbol_table, code, ctx):
         if self.number >= 2 ** (32):
