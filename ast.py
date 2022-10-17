@@ -412,15 +412,15 @@ class ArithBinOp:
 
 class Plus(ArithBinOp):
     op_cmd = asm.Add
-    ir_cmd = ir.IRAdd
+    ir_cmd = ir.Add
 
 class Minus(ArithBinOp):
     op_cmd = asm.Sub
-    ir_cmd = ir.IRSub
+    ir_cmd = ir.Sub
 
 class Mul(ArithBinOp):
     op_cmd = asm.Mul
-    ir_cmd = ir.IRMul
+    ir_cmd = ir.Mul
 
 class Relational(ArithBinOp):
     cmp_cmd = None
