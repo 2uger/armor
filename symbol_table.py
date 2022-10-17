@@ -60,7 +60,7 @@ class NewSymbolTable:
     def add_variable(self, name, c_type=CTypeInt, binding=ScopeType.LOCAL):
         """Add variable to symbol table."""
         curr_table = self.tables[len(self.tables) - 1]
-        var = ir.IRValue(name)
+        var = ir.IRValue(c_type, name)
         curr_table[name] = (var, binding)
         return var
     

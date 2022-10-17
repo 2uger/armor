@@ -2,7 +2,7 @@ import ir
 import utils
 import asm
 
-from symbol_table import NewSymbolTable, SymbolTable
+from symbol_table import CType, CTypeInt, NewSymbolTable, SymbolTable
 from context import Context
 
 
@@ -379,7 +379,7 @@ class ArithBinOp:
 
     def make_ir(self, symbol_table, ir_gen, ctx):
         """Create ir code for binary operation."""
-        out = ir.IRValue()
+        out = ir.IRValue(CTypeInt)
         l_val = self.left.make_ir(symbol_table, ir_gen, ctx)
         r_val = self.right.make_ir(symbol_table, ir_gen, ctx)
         ir_cmd = self.ir_cmd(out, l_val, r_val)
@@ -485,7 +485,7 @@ class Number:
         return f'Number: {self.number}'
 
     def make_ir(self, symbol_table, ir_gen, ctx):
-        return ir.IRValue(self.number)
+        return ir.IRValue(CTypeInt, self.number)
 
     def make_asm(self, symbol_table, code, ctx):
         if self.number >= 2 ** (32):

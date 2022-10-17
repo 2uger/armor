@@ -1,5 +1,7 @@
+from collections import OrderedDict
 from utils import Regs
 from symbol_table import SymbolTable
+from spotmap import MemSpot, r0, r1, r2, r3, r4, bp, sp
 
 class AsmGen:
     """State of asm generation phase."""
@@ -9,27 +11,33 @@ class AsmGen:
         self.spotmap = {}
         self._symbol_table = symbol_table
         self._ir_gen = ir_gen
-        self._regs = Regs()
+        self._regs = OrderedDict()
+        for reg in (r0, r1, r2, r3, r4):
+            self._regs[reg] = True
 
     def get_reg(self):
-        return self._regs.alloc()
+        for reg, is_free in self._regs.items():
+            if is_free:
+                self._regs[reg] = False
+                return reg
+        raise Exception('No more free regs in usage')
 
     def free_regs(self, regs):
-        self._regs.dealloc_many(regs)
+        for reg in regs:
+            self._regs[reg] = True
 
     def add(self, cmd):
-        self.cmds.append(cmd)
+        self.cmds.append(f'\t{cmd}')
 
     def make_asm(self):
-        for f, vars in self._ir_gen.vars.items():
-            print('Vars')
-            print(vars)
-            off = 0
+        for vars in self._ir_gen.vars.values():
+            offset = 0
             for v in vars:
-                self.spotmap[v] = off
-                off += 2
+                self.spotmap[v] = MemSpot(bp, offset)
+                offset += v.c_type.size
+
         for func_name, cmds in self._ir_gen.cmds.items():
-            print(func_name)
+            self.cmds.append(f'{func_name}:')
             for c in cmds:
                 if type(c) == str:
                     continue

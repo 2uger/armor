@@ -1,6 +1,5 @@
 from asm import Add, Mul, Sub, Mov, Ldr, Str
-from utils import regs
-from asm_gen import AsmGen
+from spotmap import RegSpot, bp
 
 class IRGen:
     """Intermediate representation."""
@@ -30,7 +29,7 @@ global_id = 1
 
 class IRValue:
 
-    def __init__(self, literal=None):
+    def __init__(self, c_type, literal=None):
         global global_id
         self._id = global_id
         global_id += 1
@@ -38,6 +37,7 @@ class IRValue:
         # int - represents number literal
         # string - represents string literal
         self.literal = literal
+        self.c_type = c_type
 
     def __repr__(self):
         return f'(Val:{self._id}({self.literal}))'
@@ -45,7 +45,7 @@ class IRValue:
 class IRCmd:
     """Base class for IR command."""
 
-    def make_asm(self, asm_gen: AsmGen):
+    def make_asm(self, asm_gen):
         raise NotImplementedError
 
 class Set(IRCmd):
@@ -62,8 +62,8 @@ class Set(IRCmd):
         arg_reg = asm_gen.spotmap[self.arg]
 
         addr_reg = asm_gen.get_reg()
-        offset = asm_gen.spotmap[self.dst]
-        asm_gen.add(Str(addr_reg, asm_gen._regs.bp, None, offset))
+        spot = asm_gen.spotmap[self.dst]
+        asm_gen.add(Str(addr_reg, bp, None, spot.asm_str()))
 
         asm_gen.free_regs([arg_reg])
 
@@ -109,7 +109,7 @@ class ArithBinOp(IRCmd):
     def __repr__(self):
         return f'{self.asm_cmd.__name__}: {self.out}, {self.left}, {self.right}'
 
-    def make_asm(self, asm_gen: AsmGen):
+    def make_asm(self, asm_gen):
         l_reg = self._move_to_reg(asm_gen, self.left)
         r_reg = self._move_to_reg(asm_gen, self.right)
         res_reg = asm_gen.get_reg()
@@ -121,13 +121,16 @@ class ArithBinOp(IRCmd):
         asm_gen.spotmap[self.out] = res_reg
     
     def _move_to_reg(self, asm_gen, value):
-        reg = asm_gen.get_reg()
+        dst_reg = asm_gen.get_reg()
         if type(value.literal) == int:
-            asm_gen.add(Mov(reg, None, imm=value.literal))
+            asm_gen.add(Mov(dst_reg, None, imm=value.literal))
         elif type(value.literal) == str:
-            offset = asm_gen.spotmap[value]
-            asm_gen.add(Ldr(reg, asm_gen._regs.bp, None, offset))
-        return reg
+            spot = asm_gen.spotmap[value]
+            if type(spot) == RegSpot:
+                asm_gen.add(Mov(dst_reg, spot))
+            else:
+                asm_gen.add(Ldr(dst_reg, bp, None, spot.asm_str()))
+        return dst_reg
 
 class Add(ArithBinOp):
     asm_cmd = Add
