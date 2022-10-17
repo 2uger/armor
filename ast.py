@@ -40,11 +40,11 @@ class Declaration:
         decl = self.node.decl
         init = self.node.init
         if isinstance(decl, Identifier):
-            dst = symbol_table.add_variable(decl.identifier)
-            res = init.make_ir(symbol_table, ir_gen, ctx)
+            var = symbol_table.add_variable(decl.identifier)
+            out = init.make_ir(symbol_table, ir_gen, ctx)
             if not ctx.is_global:
-                ir_gen.register_variable(dst)
-                ir_gen.add(ir.Set(dst, res))
+                ir_gen.register_variable(var)
+                ir_gen.add(ir.Set(var, out))
         elif isinstance(decl, Function):
             ctx.set_global(False)
             ir_gen.new_func(decl.identifier.identifier)
