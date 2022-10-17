@@ -7,6 +7,7 @@ from parser import parse
 from tokens import create_tokens, tokens
 from symbol_table import SymbolTable, NewSymbolTable
 from ir import IRGen
+from asm_gen import AsmGen
 
 
 def main():
@@ -38,6 +39,12 @@ def main():
             print(func_name)
             for c in cmds:
                 print(f'\t{c}')
+
+        asm_gen = AsmGen(symbol_table, ir_gen)
+        asm_gen.make_asm()
+        for asm_cmd in asm_gen.cmds:
+            print(asm_cmd)
+
     except Exception as e:
         raise e
         RED_COLOR = '\033[91m'

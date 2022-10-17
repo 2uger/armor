@@ -1,4 +1,4 @@
-from asm import Add, Mul, Sub, Mov
+from asm import Add, Mul, Sub, Mov, Ldr, Str
 from utils import regs
 from asm_gen import AsmGen
 
@@ -9,7 +9,6 @@ class IRGen:
         self.curr_func = None
         self.cmds = {}
         self.vars = {}
-        self.spotmap = {}
 
     def add(self, ir_cmd):
         self.cmds[self.curr_func].append(ir_cmd)
@@ -17,17 +16,14 @@ class IRGen:
     def new_func(self, func_name):
         self.curr_func = func_name
         self.cmds[func_name] = []
-        self.vars[func_name] = {}
+        self.vars[func_name] = []
 
     def register_variable(self, var):
         """
         Register variable for current function.
         Remember where it is located.
         """
-        self.vars[self.curr_func][var] = 2
-        prev_off = len(self.spotmap)
-        self.add(f'OFF {prev_off} {var}')
-        self.spotmap[var] = prev_off + 2
+        self.vars[self.curr_func].append(var)
 
 
 global_id = 1
@@ -63,9 +59,11 @@ class Set(IRCmd):
         return f'Set: {self.dst}, {self.arg}'
 
     def make_asm(self, asm_gen):
-        arg_reg = asm_gen.spotmap[self.dst]
+        arg_reg = asm_gen.spotmap[self.arg]
 
-        asm_gen.add(Ldr()) 
+        addr_reg = asm_gen.get_reg()
+        offset = asm_gen.spotmap[self.dst]
+        asm_gen.add(Str(addr_reg, asm_gen._regs.bp, None, offset))
 
         asm_gen.free_regs([arg_reg])
 
@@ -104,30 +102,31 @@ class ArithBinOp(IRCmd):
     asm_cmd = None
 
     def __init__(self, out, left, right):
-        self.out = out,
-        self.left = left,
+        self.out = out
+        self.left = left
         self.right = right
     
     def __repr__(self):
         return f'{self.asm_cmd.__name__}: {self.out}, {self.left}, {self.right}'
 
-    def make_asm(self, asm_gen):
-        l_reg = self._move_to_reg(self.left, asm_gen)
-        r_reg = self._move_to_reg(self.right, asm_gen)
-        res_reg = self.free_reg(asm_gen)
+    def make_asm(self, asm_gen: AsmGen):
+        l_reg = self._move_to_reg(asm_gen, self.left)
+        r_reg = self._move_to_reg(asm_gen, self.right)
+        res_reg = asm_gen.get_reg()
 
         asm_gen.add(self.asm_cmd(res_reg, l_reg, r_reg))
 
         asm_gen.free_regs([l_reg, r_reg])
 
-        asm_gen.register_spotmap(self.out, res_reg)
+        asm_gen.spotmap[self.out] = res_reg
     
     def _move_to_reg(self, asm_gen, value):
         reg = asm_gen.get_reg()
         if type(value.literal) == int:
-            asm_gen.add(Mov(reg, reg, imm=value.literal))
-        else:
-            raise Exception(f'Bad literal for {value}')
+            asm_gen.add(Mov(reg, None, imm=value.literal))
+        elif type(value.literal) == str:
+            offset = asm_gen.spotmap[value]
+            asm_gen.add(Ldr(reg, asm_gen._regs.bp, None, offset))
         return reg
 
 class Add(ArithBinOp):

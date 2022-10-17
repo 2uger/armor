@@ -49,7 +49,8 @@ class Declaration:
             ctx.set_global(False)
             ir_gen.new_func(decl.identifier.identifier)
             for parm in decl.parms:
-                symbol_table.add_variable(parm.decl.identifier)
+                var = symbol_table.add_variable(parm.decl.identifier)
+                ir_gen.register_variable(var)
             self.body.make_ir(symbol_table, ir_gen, ctx)
 
     def make_asm(self, symbol_table: SymbolTable, code, ctx: Context):
