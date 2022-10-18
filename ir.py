@@ -1,5 +1,6 @@
-from asm import Add, Mul, Sub, Mov, Ldr, Str
-from spotmap import RegSpot, bp
+from n_asm import Str, Ldr, Add, Mul, Sub, Mov
+import n_asm
+from spotmap import MemSpot, RegSpot, bp, sp, r0, lr
 
 class IRGen:
     """Intermediate representation."""
@@ -48,6 +49,23 @@ class IRCmd:
     def make_asm(self, asm_gen):
         raise NotImplementedError
 
+    def _move_to_reg(self, asm_gen, value):
+        spot = asm_gen.spotmap.get(value)
+        if spot:
+            dst_reg = None
+            if type(spot) == RegSpot:
+                dst_reg = spot
+            else:
+                dst_reg = asm_gen.get_reg()
+                asm_gen.add(Ldr(dst_reg, spot))
+            return dst_reg
+        if type(value.literal) == int:
+            dst_reg = asm_gen.get_reg()
+            asm_gen.add(Mov(dst_reg, None, imm=value.literal))
+            return dst_reg
+        raise Exception(f'_move_to_reg: do not know what to move: {value}') 
+
+
 class Set(IRCmd):
     """Move one value to another."""
 
@@ -60,41 +78,55 @@ class Set(IRCmd):
 
     def make_asm(self, asm_gen):
         arg_reg = asm_gen.spotmap[self.arg]
-
-        addr_reg = asm_gen.get_reg()
         spot = asm_gen.spotmap[self.dst]
-        asm_gen.add(Str(addr_reg, bp, None, spot.asm_str()))
+
+        asm_gen.add(Str(arg_reg, spot))
 
         asm_gen.free_regs([arg_reg])
 
-class Load(IRCmd):
-
-    def __init__(self, out, arg):
-        self.out = out
-        self.arg = arg
-
-    def __repr__(self):
-        return f'Load: {self.out}, {self.arg}'
-
-    def make_asm(self, asm_gen):
-        pass
-
 class FuncCall(IRCmd):
 
-    def __init__(self, func, args):
-        self.func = func
-        self.args = args
+    def __init__(self, out, func, args):
+        self._out = out
+        self._func = func
+        self._args = args
 
     def __repr__(self):
-        return f'Call: {self.func}, args{self.args}'
+        return f'Call: {self._func}, args{self._args}, out: {self._out}'
+
+    def make_asm(self, asm_gen):
+        # save local registers
+        regs_in_use = asm_gen.regs_in_use
+        if regs_in_use:
+            asm_gen.add(n_asm.Push(regs_in_use))
+
+        # push arguments
+        arguments = [self._move_to_reg(asm_gen, arg) for arg in self._args]
+        if arguments:
+            asm_gen.add(n_asm.Push(arguments))
+
+        asm_gen.add(n_asm.BL(self._func))
+        asm_gen.spotmap[self._out] = r0
 
 class Return(IRCmd):
 
     def __init__(self, value):
-        self.value = value
+        self._value = value
 
     def __repr__(self):
-        return f'Return {self.value}'
+        return f'Return {self._value}'
+
+    def make_asm(self, asm_gen):
+        res_reg = self._move_to_reg(asm_gen, self._value)
+        if res_reg != r0:
+            # store return value
+            asm_gen.add(n_asm.Mov(r0, res_reg))
+        asm_gen.free_regs([res_reg])
+
+        # function epilogue
+        asm_gen.add(n_asm.Mov(sp, bp))
+        asm_gen.add(n_asm.Pop([bp]))
+        asm_gen.add(n_asm.BX(lr))
 
 class ArithBinOp(IRCmd):
     """Binary arithmetic operations(add, sub, mul)"""
@@ -120,18 +152,6 @@ class ArithBinOp(IRCmd):
 
         asm_gen.spotmap[self.out] = res_reg
     
-    def _move_to_reg(self, asm_gen, value):
-        dst_reg = asm_gen.get_reg()
-        if type(value.literal) == int:
-            asm_gen.add(Mov(dst_reg, None, imm=value.literal))
-        elif type(value.literal) == str:
-            spot = asm_gen.spotmap[value]
-            if type(spot) == RegSpot:
-                asm_gen.add(Mov(dst_reg, spot))
-            else:
-                asm_gen.add(Ldr(dst_reg, bp, None, spot.asm_str()))
-        return dst_reg
-
 class Add(ArithBinOp):
     asm_cmd = Add
 
@@ -140,3 +160,12 @@ class Sub(ArithBinOp):
 
 class Mul(ArithBinOp):
     asm_cmd = Mul
+
+lable_num = 0
+
+class Lable:
+
+    def __init__(self, name=None):
+        global lable_num
+        self.lable = f'lable_{name}_{lable_num}'
+        lable_num += 1

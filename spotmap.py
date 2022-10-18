@@ -8,9 +8,10 @@ class MemSpot:
         self.base = base
         self.offset = offset
 
+    @property
     def asm_str(self):
         if type(self.base) == RegSpot:
-            return f'bp, {self.offset}'
+            return f'{bp.asm_str}, #{self.offset}'
         else:
             return f'{self.base}'
 
@@ -18,6 +19,10 @@ class RegSpot:
     """Register spot"""
     def __init__(self, name):
         self.name = name
+
+    @property
+    def asm_str(self):
+        return self.name
 
     @property
     def reg(self):
@@ -29,5 +34,10 @@ r2 = RegSpot('r2')
 r3 = RegSpot('r3')
 r4 = RegSpot('r4')
 r5 = RegSpot('r5')
-bp = RegSpot('bp')
+r6 = RegSpot('r6')
+r7 = RegSpot('r7')
+r8 = RegSpot('r8')
+r9 = RegSpot('r9')
+bp = RegSpot('r12')
 sp = RegSpot('sp')
+lr = RegSpot('lr')

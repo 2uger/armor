@@ -48,6 +48,7 @@ class Declaration:
         elif isinstance(decl, Function):
             ctx.set_global(False)
             ir_gen.new_func(decl.identifier.identifier)
+            ir_gen.add(ir.Lable(decl.identifier.identifier))
             for parm in decl.parms:
                 var = symbol_table.add_variable(parm.decl.identifier)
                 ir_gen.register_variable(var)
@@ -174,8 +175,13 @@ class FuncCall:
         self.args = args
 
     def make_ir(self, symbol_table, ir_gen, ctx):
+        if ctx.is_global:
+            raise Exception(f'can\'t call function in global context')
         args = [arg.make_ir(symbol_table, ir_gen, ctx) for arg in self.args]
-        ir_gen.add(ir.FuncCall(self.func, args))
+        out = ir.IRValue(CTypeInt)
+        ir_gen.add(ir.FuncCall(out, self.func, args))
+
+        return out
 
     def make_asm(self, symbol_table: SymbolTable, code, ctx):
         if ctx.is_global:
