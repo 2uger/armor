@@ -1,14 +1,13 @@
 int k = 1;
-int
-f(int ll){
-    return k + 2;
-};
+int r = k + 1;
 
 int
-func(int k)
-{
-    2 = 1;
-    k = f(2) + 1;
-    f(2);
-    return k;
+f(int ll){
+    if (ll) {
+        return ll + r;
+    } else {
+        return ll + 2;
+    }
+    return ll + 2;
 };
+

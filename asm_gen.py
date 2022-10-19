@@ -40,6 +40,12 @@ class AsmGen:
         self.cmds.append(f'\t{cmd}')
 
     def make_asm(self):
+        for global_var in self._ir_gen.globals:
+            base = 4096
+            print('Global ', global_var)
+            self.spotmap[global_var] = MemSpot(4096)
+            base += global_var.c_type.size
+
         for func_name, args in self._ir_gen.func_args.items():
             offset = (-1) * (sum([arg.c_type.size for arg in args]) + 4)
             for arg in args:
@@ -62,7 +68,7 @@ class AsmGen:
 
         for func_name, cmds in self._ir_gen.cmds.items():
             self.clean_regs()
-            self.cmds.append(f'{cmds[0].lable}:')
+            self.cmds.append(f'{func_name}:')
             # hacks, but this is prolog to function
             self.add(Push([bp]))
             self.add(Mov(bp, sp))
@@ -73,6 +79,9 @@ class AsmGen:
                 self.add(Sub(sp, sp, imm=frame_pointer_size))
             
             for c in cmds[1:]:
+                if type(c) == Lable:
+                    self.cmds.append(f'{c.lable}:')
+                    continue
                 if type(c) == str:
                     continue
                 c.make_asm(self)

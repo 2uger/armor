@@ -4,16 +4,16 @@ class MemSpot:
     Absolute for variables in .data section
     Relative from base pointer for local function variables
     """
-    def __init__(self, base, offset):
-        self.base = base
-        self.offset = offset
+    def __init__(self, base, offset=None):
+        self._base = base
+        self._offset = offset
 
     @property
     def asm_str(self):
-        if type(self.base) == RegSpot:
-            return f'{bp.asm_str}, #{self.offset}'
+        if type(self._base) == RegSpot:
+            return f'{bp.name}, #{self._offset}'
         else:
-            return f'{self.base}'
+            return f'{self._base}'
 
 class RegSpot:
     """Register spot"""

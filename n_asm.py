@@ -52,11 +52,15 @@ class Mov(ASMCommand):
         else:
             return f'ldr {self.op_dest.reg}, ={self.imm}'
 
-class Cmp(ASMCommand):
+class Cmp:
     cmd = 'cmp'
 
+    def __init__(self, l_reg, r_reg):
+        self._l_reg = l_reg
+        self._r_reg = r_reg
+
     def __repr__(self):
-        return f'{self.cmd} {self.op1.reg}, {self.op2.reg}'
+        return f'{self.cmd} {self._l_reg.name}, {self._r_reg.name}'
 
 class Push:
     cmd = 'push'
@@ -80,12 +84,13 @@ class Lable:
 class B:
     cmd = 'b'
 
-    def __init__(self, location, cmp_cmd=''):
-        self.location = location
-        self.cmp_cmd = cmp_cmd
+    def __init__(self, lable, cond=''):
+        self._lable = lable
+        self._cond = cond
 
     def __repr__(self):
-        return f'{self.cmd}{self.cmp_cmd} {self.location}'
+        return f'{self.cmd}{self._cond} {self._lable}'
+
 
 class BL(B):
     cmd = 'bl'

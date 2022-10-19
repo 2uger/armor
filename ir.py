@@ -12,6 +12,7 @@ class IRGen:
         self.func_args = {}
         # function locals
         self.func_locals = {}
+        self.globals = []
 
     def add(self, ir_cmd):
         self.cmds[self.curr_func].append(ir_cmd)
@@ -23,13 +24,17 @@ class IRGen:
         self.func_args[func_name] = []
         self.func_locals[func_name] = []
 
-    def register_argument(self, var):
+    def register_argument(self, val):
         """Register function argument."""
-        self.func_args[self.curr_func].append(var)
+        self.func_args[self.curr_func].append(val)
 
-    def register_local(self, var):
+    def register_local(self, val):
         """Register function local variable."""
-        self.func_locals[self.curr_func].append(var)
+        self.func_locals[self.curr_func].append(val)
+
+    def register_global(self, val):
+        """Register global variable."""
+        self.globals.append(val)
 
 
 global_id = 1
@@ -143,6 +148,33 @@ class Return(IRCmd):
         asm_gen.add(n_asm.Pop([bp]))
         asm_gen.add(n_asm.BX(lr))
 
+class Cmp(IRCmd):
+
+    def __init__(self, left, right):
+        self._left = left
+        self._right = right
+
+    def __repr__(self):
+        return f'Cmp: {self._left} to {self._right}'
+
+    def make_asm(self, asm_gen):
+        l_reg = self._move_to_reg(asm_gen, self._left)
+        r_reg = self._move_to_reg(asm_gen, self._right)
+
+        asm_gen.add(n_asm.Cmp(l_reg, r_reg))
+
+class Jmp(IRCmd):
+
+    def __init__(self, lable, cond=''):
+        self._lable = lable
+        self._cond = cond
+
+    def __repr__(self):
+        return f'Jmp: {self._lable}'
+    
+    def make_asm(self, asm_gen):
+        asm_gen.add(n_asm.B(self._lable, self._cond))
+
 class ArithBinOp(IRCmd):
     """Binary arithmetic operations(add, sub, mul)"""
 
@@ -182,5 +214,8 @@ class Lable:
 
     def __init__(self, name=None):
         global lable_num
-        self.lable = f'lable_{name}_{lable_num}'
+        self.lable = 'lable{}_{}'.format(f'_{name}' if name else '', lable_num)
         lable_num += 1
+
+    def __repr__(self):
+        return self.lable

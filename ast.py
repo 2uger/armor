@@ -2,7 +2,7 @@ import ir
 import utils
 import asm
 
-from symbol_table import CType, CTypeInt, NewSymbolTable, SymbolTable
+from symbol_table import CType, CTypeInt, NewSymbolTable, SymbolTable, ScopeType
 from context import Context
 
 
@@ -40,15 +40,21 @@ class Declaration:
         decl = self.node.decl
         init = self.node.init
         if isinstance(decl, Identifier):
-            var = symbol_table.add_variable(decl.identifier)
-            out = init.make_ir(symbol_table, ir_gen, ctx)
-            if not ctx.is_global:
-                ir_gen.register_local(var)
-                ir_gen.add(ir.Set(var, out))
+            if ctx.is_global:
+                val = symbol_table.add_variable(decl.identifier, CTypeInt, ScopeType.GLOBAL)
+                out = init.make_ir(symbol_table, ir_gen, ctx)
+                print('Literal out ', out.literal)
+                if type(out.literal) != int:
+                    raise Exception(f'non integer literal for global variable: {decl.identifier}')
+                ir_gen.register_global(val)
+            else:
+                val = symbol_table.add_variable(decl.identifier)
+                out = init.make_ir(symbol_table, ir_gen, ctx)
+                ir_gen.register_local(val)
+                ir_gen.add(ir.Set(val, out))
         elif isinstance(decl, Function):
             ctx.set_global(False)
             ir_gen.new_func(decl.identifier.identifier)
-            ir_gen.add(ir.Lable(decl.identifier.identifier))
             for parm in decl.parms:
                 var = symbol_table.add_variable(parm.decl.identifier)
                 ir_gen.register_argument(var)
@@ -301,7 +307,22 @@ class IfStatement:
         self.else_stmt = else_stmt
 
     def make_ir(self, symbol_table, ir_gen, ctx):
-        pass
+        if not isinstance(self.cond, Relational):
+            # Everything is True inside if statement if result of expression > 0
+            out = self.cond.make_ir(symbol_table, ir_gen, ctx)
+            ir_gen.add(ir.Cmp(out, ir.IRValue(CTypeInt, 0)))
+            cond_cmd = 'ne'
+        else:
+            self.cond.make_ir(symbol_table, ir_gen, ctx)
+            cond_cmd = self.cond.cond
+
+        else_lable = ir.Lable('else')
+        ir_gen.add(ir.Jmp(else_lable, cond_cmd))
+
+        self.stmt.make_ir(symbol_table, ir_gen, ctx)
+
+        ir_gen.add(else_lable)
+        self.else_stmt.make_ir(symbol_table, ir_gen, ctx)
 
     def make_asm(self, symbol_table, code, ctx):
         if not isinstance(self.cond, Relational):
@@ -353,15 +374,13 @@ class Equals:
     def make_ir(self, symbol_table, ir_gen, ctx):
         if not isinstance(self.left, Identifier):
             raise Exception('only identifier could be on left side of equal sign')
-        dst = symbol_table.lookup(self.left.identifier)
-        if not dst:
-            raise Exception(f'unknown identifier: {self.left.identifier}')
+        dst = self.left.make_ir(symbol_table, ir_gen, ctx)
         res = self.right.make_ir(symbol_table, ir_gen, ctx)
         ir_gen.add(ir.Set(dst, res))
 
     def make_asm(self, symbol_table, code, ctx):
         if not isinstance(self.left, Identifier):
-            raise Exception('only identifier could be on left side of equal sign')
+            raise Exception(f'only identifier could be on left side of equal sign: {self.left}')
         l_symbol = symbol_table.lookup(self.left.identifier)
         if not l_symbol:
             raise Exception(f'reference before assignment: {self.left.identifier}')
@@ -390,7 +409,14 @@ class ArithBinOp:
 
     def make_ir(self, symbol_table, ir_gen, ctx):
         """Create ir code for binary operation."""
+        if ctx.is_global:
+            if type(self.left) != Number or type(self.right) != Number:
+                raise Exception('only numbers allowed in global context')
+            else:
+                return ir.IRValue(CTypeInt, self.left.number + self.right.number)
+
         out = ir.IRValue(CTypeInt)
+        
         l_val = self.left.make_ir(symbol_table, ir_gen, ctx)
         r_val = self.right.make_ir(symbol_table, ir_gen, ctx)
         ir_cmd = self.ir_cmd(out, l_val, r_val)
@@ -435,10 +461,16 @@ class Mul(ArithBinOp):
     ir_cmd = ir.Mul
 
 class Relational(ArithBinOp):
+    cond = None
     cmp_cmd = None
 
     def __init__(self, left, right, op):
         super().__init__(left, right, op)
+
+    def make_ir(self, symbol_table, ir_gen, ctx):
+        l_val = self.left.make_ir(symbol_table, ir_gen, ctx)
+        r_val = self.right.make_ir(symbol_table, ir_gen, ctx)
+        ir_gen.add(ir.Cmp(l_val, r_val))
 
     def make_asm(self, symbol_table, code, ctx):
         l_res_reg = self.left.make_asm(symbol_table, code, ctx)
@@ -447,12 +479,15 @@ class Relational(ArithBinOp):
         code.append(asm.Cmp(None, l_res_reg, r_res_reg))
 
 class LessThan(Relational):
+    cond = 'lt'
     cmp_cmd = 'lt'
 
 class BiggerThan(Relational):
+    cond = 'gt'
     cmp_cmd = 'gt'
 
 class Equal(Relational):
+    cond = 'eq'
     cmp_cmd = 'eq'
 
 class Identifier:
@@ -495,7 +530,7 @@ class Number:
     def __repr__(self):
         return f'Number: {self.number}'
 
-    def make_ir(self, symbol_table, ir_gen, ctx):
+    def make_ir(self, *args):
         return ir.IRValue(CTypeInt, self.number)
 
     def make_asm(self, symbol_table, code, ctx):
