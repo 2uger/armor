@@ -8,7 +8,10 @@ class IRGen:
     def __init__(self):
         self.curr_func = None
         self.cmds = {}
-        self.vars = {}
+        # function arguments
+        self.func_args = {}
+        # function locals
+        self.func_locals = {}
 
     def add(self, ir_cmd):
         self.cmds[self.curr_func].append(ir_cmd)
@@ -16,14 +19,17 @@ class IRGen:
     def new_func(self, func_name):
         self.curr_func = func_name
         self.cmds[func_name] = []
-        self.vars[func_name] = []
 
-    def register_variable(self, var):
-        """
-        Register variable for current function.
-        Remember where it is located.
-        """
-        self.vars[self.curr_func].append(var)
+        self.func_args[func_name] = []
+        self.func_locals[func_name] = []
+
+    def register_argument(self, var):
+        """Register function argument."""
+        self.func_args[self.curr_func].append(var)
+
+    def register_local(self, var):
+        """Register function local variable."""
+        self.func_locals[self.curr_func].append(var)
 
 
 global_id = 1
@@ -77,7 +83,7 @@ class Set(IRCmd):
         return f'Set: {self.dst}, {self.arg}'
 
     def make_asm(self, asm_gen):
-        arg_reg = asm_gen.spotmap[self.arg]
+        arg_reg = self._move_to_reg(asm_gen, self.arg)
         spot = asm_gen.spotmap[self.dst]
 
         asm_gen.add(Str(arg_reg, spot))
@@ -106,7 +112,16 @@ class FuncCall(IRCmd):
             asm_gen.add(n_asm.Push(arguments))
 
         asm_gen.add(n_asm.BL(self._func))
+        # Location of function result
         asm_gen.spotmap[self._out] = r0
+
+        # clean stack from function arguments
+        if arguments:
+            asm_gen.add(n_asm.Sub(sp, sp, None, imm=len(arguments) * 4))
+
+        # restore saved local registers
+        if regs_in_use:
+            asm_gen.add(n_asm.Pop(regs_in_use))
 
 class Return(IRCmd):
 

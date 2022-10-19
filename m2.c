@@ -1,12 +1,14 @@
+int k = 1;
 int
 f(int ll){
-    int k = ll + 9 + 1 + 4;
     return k + 2;
 };
 
 int
-func()
+func(int k)
 {
-    int m = f(2);
-    return m;
+    2 = 1;
+    k = f(2) + 1;
+    f(2);
+    return k;
 };

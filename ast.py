@@ -43,7 +43,7 @@ class Declaration:
             var = symbol_table.add_variable(decl.identifier)
             out = init.make_ir(symbol_table, ir_gen, ctx)
             if not ctx.is_global:
-                ir_gen.register_variable(var)
+                ir_gen.register_local(var)
                 ir_gen.add(ir.Set(var, out))
         elif isinstance(decl, Function):
             ctx.set_global(False)
@@ -51,7 +51,7 @@ class Declaration:
             ir_gen.add(ir.Lable(decl.identifier.identifier))
             for parm in decl.parms:
                 var = symbol_table.add_variable(parm.decl.identifier)
-                ir_gen.register_variable(var)
+                ir_gen.register_argument(var)
             self.body.make_ir(symbol_table, ir_gen, ctx)
 
     def make_asm(self, symbol_table: SymbolTable, code, ctx: Context):
@@ -177,6 +177,7 @@ class FuncCall:
     def make_ir(self, symbol_table, ir_gen, ctx):
         if ctx.is_global:
             raise Exception(f'can\'t call function in global context')
+        # TODO: check amounts of arguments to function
         args = [arg.make_ir(symbol_table, ir_gen, ctx) for arg in self.args]
         out = ir.IRValue(CTypeInt)
         ir_gen.add(ir.FuncCall(out, self.func, args))
@@ -350,7 +351,11 @@ class Equals:
         return f'{self.left} {self.op} {self.right}'
 
     def make_ir(self, symbol_table, ir_gen, ctx):
+        if not isinstance(self.left, Identifier):
+            raise Exception('only identifier could be on left side of equal sign')
         dst = symbol_table.lookup(self.left.identifier)
+        if not dst:
+            raise Exception(f'unknown identifier: {self.left.identifier}')
         res = self.right.make_ir(symbol_table, ir_gen, ctx)
         ir_gen.add(ir.Set(dst, res))
 

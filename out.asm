@@ -1,4 +1,5 @@
 Section: .data:
+0x1000	0x1	 // k
 
 Section: .text:
 f:
@@ -27,7 +28,7 @@ f:
 func:
     push {bp}
     mov bp, sp
-    sub sp, sp, #4
+    sub sp, sp, #0
     ldr r0, =2
     push {r0}
     add sp, sp, #4
@@ -35,12 +36,21 @@ func:
     sub r0, sp, #8
     str r1, [r0]
     sub sp, sp, #16
-    add r0, bp, #4
+    ldr r0, =1
+    add r2, r1, r0
+    sub r0, bp, #16
+    str r2, [r0]
+    ldr r0, =2
+    push {r0}
+    add sp, sp, #4
+    bl f
+    sub r0, sp, #8
     str r1, [r0]
-    sub r1, bp, #4
-    ldr r0, [r1]
-    sub r1, bp, #8
-    str r0, [r1]
+    sub sp, sp, #16
+    sub r2, bp, #16
+    ldr r0, [r2]
+    sub r2, bp, #8
+    str r0, [r2]
     mov sp, bp
-    pop {bp ,r1}
-    bx r1
+    pop {bp ,r2}
+    bx r2
