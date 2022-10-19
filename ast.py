@@ -42,7 +42,10 @@ class Declaration:
         if isinstance(decl, Identifier):
             if ctx.is_global:
                 val = symbol_table.add_variable(decl.identifier, CTypeInt, ScopeType.GLOBAL)
+                if type(init) != Number:
+                    raise Exception('only constant values for global variables')
                 out = init.make_ir(symbol_table, ir_gen, ctx)
+
                 print('Literal out ', out.literal)
                 if type(out.literal) != int:
                     raise Exception(f'non integer literal for global variable: {decl.identifier}')
@@ -409,11 +412,8 @@ class ArithBinOp:
 
     def make_ir(self, symbol_table, ir_gen, ctx):
         """Create ir code for binary operation."""
-        if ctx.is_global:
-            if type(self.left) != Number or type(self.right) != Number:
-                raise Exception('only numbers allowed in global context')
-            else:
-                return ir.IRValue(CTypeInt, self.left.number + self.right.number)
+        if type(self.left) == Number and type(self.right) == Number:
+            return ir.IRValue(CTypeInt, self.left.number + self.right.number)
 
         out = ir.IRValue(CTypeInt)
         
