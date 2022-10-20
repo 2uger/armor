@@ -1,11 +1,15 @@
 import ir
-from symbol_table import CTypeInt, NewSymbolTable, ScopeType, get_c_type_from_token
+from symbol_table import (
+    CTypeInt,
+    NewSymbolTable,
+    ScopeType,
+    get_c_type_from_token
+)
 from ir_gen import IRGen
 
 
 class EmptyNode:
     """Empty node."""
-
     def make_ir(self, *args, **kwargs):
         pass
 
@@ -135,9 +139,6 @@ class Compound:
         r += '}'
         return r
 
-    def __getitem__(self, n):
-        return self.items[n]
-
 class Return:
     def __init__(self, ret_expr):
         self.ret_expr = ret_expr
@@ -192,7 +193,6 @@ class Equals:
         res = self.right.make_ir(symbol_table, ir_gen, ctx)
         ir_gen.add(ir.Set(dst, res))
 
-### Expressions
 class ArithBinOp:
     ir_cmd = None
 

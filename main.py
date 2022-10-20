@@ -49,9 +49,6 @@ def main():
         for c in asm_gen.cmds:
             text.append(c)
             f.write(c + '\n')
-        # f.write('Section: .data:\n')
-        # for d in sorted(data, key=lambda x: x.mem_binding):
-        #     f.write(f'{hex(d.mem_binding)}\t{hex(d.value)}\t // {d.name}\n')
     
 if __name__ == '__main__':
     main()

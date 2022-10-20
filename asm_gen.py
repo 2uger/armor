@@ -46,7 +46,6 @@ class AsmGen:
         base = 4096 
         self.cmds.append('.data')
         for global_var, value in self._ir_gen.globals.items():
-            print('Global ', global_var, base)
             self.spotmap[global_var] = MemSpot(base)
             base += global_var.c_type.size
             self.cmds.append(f'{global_var.literal}: .word {value}')
@@ -61,7 +60,6 @@ class AsmGen:
         for func_name, args in self._ir_gen.func_args.items():
             offset = 4
             for arg in args:
-                print('Local ', arg, offset)
                 self.spotmap[arg] = MemSpot(bp, offset)
                 offset += arg.c_type.size
             
@@ -86,7 +84,6 @@ class AsmGen:
             self.add(Mov(bp, sp))
 
             frame_pointer_size = fp_size[func_name]
-            print(fp_size)
             if frame_pointer_size:
                 self.add(Sub(sp, sp, imm=frame_pointer_size))
             
@@ -101,7 +98,6 @@ class AsmGen:
         self.cmds.append('')
 
         for global_var, value in self._ir_gen.globals.items():
-            print('Global ', global_var, base)
             self.spotmap[global_var] = MemSpot(base)
             base += global_var.c_type.size
             self.cmds.append(f'adr_{global_var.literal}: .word {global_var.literal}')
