@@ -1,30 +1,30 @@
 .data
 .word 2
-.word 12312
 
 .text
 f:
 	push {bp}
 	mov bp, sp
-	sub sp, sp, #-4
-	bne lable_else_0
-	ldr r0, =3
-	str r0, [bp, #-8]
-	ldr r0, [4100]
+	ldr r0, =2
 	ldr r1, [4096]
 	add r2, r0, r1
-	mov r0, r2
+	ldr r0, [bp, #-16]
+	add r1, r0, r2
+	str r1, [4096]
+	ldr r0, [4096]
 	mov sp, bp
 	pop {bp}
 	bx lr
-lable_else_0:
+func_2:
+	push {bp}
+	mov bp, sp
 	ldr r0, =2
-	push {r0}
+	ldr r1, =3
+	ldr r2, =4
+	push {r0, r1, r2}
 	bl f
-	sub sp, sp, #4
-	ldr r1, [bp, #-8]
-	ldr r2, =2
-	add r3, r1, r2
+	sub sp, sp, #12
+	ldr r3, =2
 	mov r0, r3
 	mov sp, bp
 	pop {bp}

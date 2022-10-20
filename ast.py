@@ -1,11 +1,11 @@
 import ir
-from symbol_table import CTypeInt, NewSymbolTable, ScopeType
+from symbol_table import CTypeInt, CTypeVoid, NewSymbolTable, ScopeType, get_c_type_from_token
+from ir_gen import IRGen
 
 
 class EmptyNode:
     """Empty node."""
-    def make_asm(self, *args, **kwargs):
-        pass
+
     def make_ir(self, *args, **kwargs):
         pass
 
@@ -27,7 +27,7 @@ class Declaration:
     def __repr__(self):
         return f'{self.node}: {self.body}'
 
-    def make_ir(self, symbol_table: NewSymbolTable, ir_gen: ir.IRGen, ctx):
+    def make_ir(self, symbol_table: NewSymbolTable, ir_gen: IRGen, ctx):
         spec = self.node.spec
         decl = self.node.decl
         init = self.node.init
@@ -52,13 +52,18 @@ class Declaration:
                 ir_gen.register_local(val)
                 ir_gen.add(ir.Set(val, out))
         elif isinstance(decl, Function):
+            if get_c_type_from_token(spec) != CTypeInt:
+                raise Exception('function should return int type')
+
             ctx.set_global(False)
             ir_gen.new_func(decl.identifier.identifier)
+
             symbol_table.add_variable(decl.identifier.identifier, CTypeInt, ScopeType.GLOBAL)
             for parm in decl.parms:
                 var = symbol_table.add_variable(parm.decl.identifier)
                 ir_gen.register_argument(var)
             self.body.make_ir(symbol_table, ir_gen, ctx)
+            
             ctx.set_global(True)
 
         else:
@@ -112,11 +117,6 @@ class FuncCall:
         func_parms = ir_gen.func_args.get(self._func_name)
         if len(func_parms) != len(self._args):
             raise Exception(f'wrong amount of arguments to function call: {self._func_name}')
-
-class ExprStmt:
-    """Single Expression statement."""
-    def __init__(self, expr):
-        self.expr = expr
 
 class Compound:
     """List of expressions."""

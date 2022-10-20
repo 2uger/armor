@@ -1,14 +1,16 @@
 int r = 2;
 
-int global = 12312;
 int
-f(int ll){
-    if (ll) {
-        int m = 1 + 2;
-        return global + r;
-    } else {
-        f(2);
-    }
-    return ll + 2;
+f(int rrr, int arg_1, int ll){
+    r = rrr + 2 + r;
+    return r;
 };
+
+int
+func_2()
+{
+    f(2, 3, 4);
+    return 2;
+};
+
 

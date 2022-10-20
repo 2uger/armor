@@ -1,6 +1,7 @@
 import enum
 from collections import namedtuple
 import ir
+from tokens import TokenKind
 
 class ScopeType(enum.Enum):
     """
@@ -44,3 +45,6 @@ class NewSymbolTable:
     
     def close_scope(self):
         self.tables.pop()
+
+def get_c_type_from_token(token):
+    return {TokenKind.INT: CTypeInt}.get(token.kind)

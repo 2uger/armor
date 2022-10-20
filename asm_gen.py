@@ -1,6 +1,9 @@
 from collections import OrderedDict
 
-from spotmap import MemSpot, r0, r1, r2, r3, r4, r5, r6, r7, r8, bp, sp
+from spotmap import (
+    MemSpot,
+    r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, bp, sp
+)
 from ir import Lable
 from n_asm import Push, Sub, Mov
 from symbol_table import NewSymbolTable
@@ -14,7 +17,7 @@ class AsmGen:
         self._symbol_table = symbol_table
         self._ir_gen = ir_gen
         self._regs = OrderedDict()
-        for reg in (r0, r1, r2, r3, r4, r5, r6, r7):
+        for reg in (r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11):
             self._regs[reg] = True
 
     def get_reg(self):
@@ -54,22 +57,22 @@ class AsmGen:
         for func_name, args in self._ir_gen.func_args.items():
             offset = (-1) * (sum([arg.c_type.size for arg in args]) + 4)
             for arg in args:
+                print('Local ', arg, offset)
                 self.spotmap[arg] = MemSpot(bp, offset)
                 offset += arg.c_type.size
             
-        # frame pointer offset for every function
-        fp_offset = {}
+        # frame pointer size for every function
+        fp_size = {}
 
         for func_name, locals in self._ir_gen.func_locals.items():
-            print(locals)
             if not locals:
-                fp_offset[func_name] = 0
+                fp_size[func_name] = 0
                 continue
-            offset = (-1) * (sum([local.c_type.size for local in locals]) + 4)
+            offset = 0#(-1) * (sum([local.c_type.size for local in locals]))
             for local in locals:
                 self.spotmap[local] = MemSpot(bp, offset)
                 offset += local.c_type.size
-            fp_offset[func_name] = offset
+            fp_size[func_name] = offset
 
         for func_name, cmds in self._ir_gen.cmds.items():
             self.clean_regs()
@@ -78,12 +81,12 @@ class AsmGen:
             self.add(Push([bp]))
             self.add(Mov(bp, sp))
 
-            frame_pointer_size = fp_offset[func_name]
-            print(fp_offset)
+            frame_pointer_size = fp_size[func_name]
+            print(fp_size)
             if frame_pointer_size:
                 self.add(Sub(sp, sp, imm=frame_pointer_size))
             
-            for c in cmds[1:]:
+            for c in cmds:
                 if type(c) == Lable:
                     self.cmds.append(f'{c.lable}:')
                     continue

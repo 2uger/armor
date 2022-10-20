@@ -18,15 +18,21 @@ class MemSpot:
 class RegSpot:
     """Register spot"""
     def __init__(self, name):
-        self.name = name
+        self._name = name
 
+    def __repr__(self):
+        return f'Reg: {self._name}'
     @property
     def asm_str(self):
-        return self.name
+        return self._name
 
     @property
     def reg(self):
-        return self.name
+        return self._name
+
+    @property
+    def name(self):
+        return self._name
 
 r0 = RegSpot('r0')
 r1 = RegSpot('r1')
@@ -38,6 +44,8 @@ r6 = RegSpot('r6')
 r7 = RegSpot('r7')
 r8 = RegSpot('r8')
 r9 = RegSpot('r9')
+r10 = RegSpot('r10')
+r11 = RegSpot('r11')
 bp = RegSpot('bp')
 sp = RegSpot('sp')
 lr = RegSpot('lr')

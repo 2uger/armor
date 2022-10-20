@@ -2,9 +2,9 @@ import argparse
 
 from context import Context
 from parser import parse
-from tokens import create_tokens, tokens
+from tokens import create_tokens
 from symbol_table import NewSymbolTable
-from ir import IRGen
+from ir_gen import IRGen
 from asm_gen import AsmGen
 
 
@@ -38,7 +38,6 @@ def main():
         asm_gen.make_asm()
         for asm_cmd in asm_gen.cmds:
             print(asm_cmd)
-
     except Exception as e:
         RED_COLOR = '\033[91m'
         RESET = '\033[0m'

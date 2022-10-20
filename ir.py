@@ -1,41 +1,6 @@
 from n_asm import Str, Ldr, Add, Mul, Sub, Mov
 import n_asm
-from spotmap import MemSpot, RegSpot, bp, sp, r0, lr
-
-class IRGen:
-    """Intermediate representation."""
-
-    def __init__(self):
-        self.curr_func = None
-        self.cmds = {}
-        # function arguments
-        self.func_args = {}
-        # function locals
-        self.func_locals = {}
-        self.globals = {} 
-
-    def add(self, ir_cmd):
-        self.cmds[self.curr_func].append(ir_cmd)
-    
-    def new_func(self, func_name):
-        self.curr_func = func_name
-        self.cmds[func_name] = []
-
-        self.func_args[func_name] = []
-        self.func_locals[func_name] = []
-
-    def register_argument(self, var):
-        """Register function argument."""
-        self.func_args[self.curr_func].append(var)
-
-    def register_local(self, var):
-        """Register function local variable."""
-        self.func_locals[self.curr_func].append(var)
-
-    def register_global(self, var, value):
-        """Register global variable."""
-        self.globals[var] = value
-
+from spotmap import RegSpot, bp, sp, r0, lr
 
 global_id = 1
 
@@ -74,8 +39,7 @@ class IRCmd:
             dst_reg = asm_gen.get_reg()
             asm_gen.add(Mov(dst_reg, None, imm=value.literal))
             return dst_reg
-        raise Exception(f'_move_to_reg: do not know what to move: {value}') 
-
+        raise Exception(f'_move_to_reg: don\'t got spot for: {value}') 
 
 class Set(IRCmd):
     """Move one value to another."""
@@ -189,6 +153,8 @@ class ArithBinOp(IRCmd):
         return f'{self.asm_cmd.__name__}: {self.out}, {self.left}, {self.right}'
 
     def make_asm(self, asm_gen):
+        print('HELLLLLLL')
+        print(self.out)
         l_reg = self._move_to_reg(asm_gen, self.left)
         r_reg = self._move_to_reg(asm_gen, self.right)
         res_reg = asm_gen.get_reg()
@@ -197,6 +163,7 @@ class ArithBinOp(IRCmd):
 
         asm_gen.free_regs([l_reg, r_reg])
 
+        print(f'Register spotmap for {self.out}')
         asm_gen.spotmap[self.out] = res_reg
     
 class Add(ArithBinOp):
