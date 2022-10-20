@@ -1,6 +1,6 @@
 from n_asm import Str, Ldr, Add, Mul, Sub, Mov
 import n_asm
-from spotmap import RegSpot, bp, sp, r0, lr
+from spotmap import MemSpot, RegSpot, bp, sp, r0, lr
 
 global_id = 1
 
@@ -27,13 +27,23 @@ class IRCmd:
 
     def _move_to_reg(self, asm_gen, value):
         spot = asm_gen.spotmap.get(value)
+
         if spot:
             dst_reg = None
             if type(spot) == RegSpot:
                 dst_reg = spot
             else:
-                dst_reg = asm_gen.get_reg()
-                asm_gen.add(Ldr(dst_reg, spot))
+                if type(spot._base) != RegSpot:
+                    tmp_reg = asm_gen.get_reg()
+                    dst_reg = asm_gen.get_reg()
+
+                    asm_gen.add(Ldr(tmp_reg, value.literal))
+                    asm_gen.add(Ldr(dst_reg, tmp_reg))
+
+                    asm_gen.free_regs([tmp_reg])
+                else:
+                    dst_reg = asm_gen.get_reg()
+                    asm_gen.add(Ldr(dst_reg, spot))
             return dst_reg
         if type(value.literal) == int:
             dst_reg = asm_gen.get_reg()
@@ -55,9 +65,17 @@ class Set(IRCmd):
         arg_reg = self._move_to_reg(asm_gen, self.arg)
         spot = asm_gen.spotmap[self.dst]
 
-        asm_gen.add(Str(arg_reg, spot))
+        if type(spot) == MemSpot and type(spot._base) != RegSpot:
+            tmp_reg = asm_gen.get_reg()
 
-        asm_gen.free_regs([arg_reg])
+            asm_gen.add(Ldr(tmp_reg, self.dst.literal))
+            asm_gen.add(Str(arg_reg, tmp_reg))
+
+            asm_gen.free_regs([tmp_reg, arg_reg])
+        else:
+            asm_gen.add(Str(arg_reg, spot))
+
+            asm_gen.free_regs([arg_reg])
 
 class FuncCall(IRCmd):
 
@@ -86,7 +104,7 @@ class FuncCall(IRCmd):
 
         # clean stack from function arguments
         if arguments:
-            asm_gen.add(n_asm.Sub(sp, sp, None, imm=len(arguments) * 4))
+            asm_gen.add(n_asm.Add(sp, sp, None, imm=len(arguments) * 4))
 
         # restore saved local registers
         if regs_in_use:

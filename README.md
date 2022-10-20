@@ -1,35 +1,70 @@
 Compiler for C-like language.  
 ### Main features:
-* Generate code straight to assembly.  
-* Use simple techniques for code parsing and generation
-* Understand how to implement:
-  - Function code generation
-  - Handle global and local context
-  - Evaluate expressions
-  - Function calls and returns
+* Global and local variables
+* Function calls
+* Branching
+* Type checking
 
 ### CPU architecture specs:
-* Use stack to pass variables to function and local variables
-* r0-r13, sp, bp, pc  
- bp - frame pointer, point to the beginning of the function's stack
+* Use armV7 base arch
+* r0 - r11 - free regs
+* r12 - as frame pointer
 
+# Example:
+```
+int r = 2;
+
+int f(int arg_1, int arg_2) {
+    return arg_1 + arg_2;
+};
+
+int main(int k) {
+    int loc = k + 1;
+    return f(2, loc);
+};
+
+```
+Will generate:
+```
+.data
+r: .word 2
+
+.text
+.global _start
+_start:
+        b main
+f:
+        push {r12}
+        mov r12, sp
+        ldr r0, [r12, #4]
+        ldr r1, [r12, #8]
+        add r2, r0, r1
+        mov r0, r2
+        mov sp, r12
+        pop {r12}
+        bx lr
+main:
+        push {r12}
+        mov r12, sp
+        sub sp, sp, #4
+        ldr r0, [r12, #4]
+        ldr r1, =1
+        add r2, r0, r1
+        str r2, [r12, #0]
+        ldr r0, =2
+        ldr r1, [r12, #0]
+        push {r0, r1}
+        bl f
+        add sp, sp, #8
+        mov sp, r12
+        pop {r12}
+        bx lr
+
+adr_r: .word r
+```
 ### How to run:  
 **python3 main.py m1.c -o out.asm**
 
 ### To implement:
-- Think about register representation [+]
-- Generate code for function call [+]
-- Push empty space into stack for local variables in function [+]
-- Beeing able to recognize local variables in function body [+]
-- Follow current context to know what function should return [+]
-- Need somehow check that function will return smth
+- More type checking
 - Add char type, make it different size
-- Count every expression inside if statement
-- Else lables same everywhere, need new ones for every if..else [+]
-
-## TODO:
-* Semantic analysis:
-  * Type checking(comparison, bin operations, assignment)
-* Stack frame:
-  * Declaration of local variables only on the function entry(to simplifiy search of variables in function)
-  * Create ADT for function frame to store parameters and local variables and it's location(register or memory)

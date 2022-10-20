@@ -1,5 +1,5 @@
 import ir
-from symbol_table import CTypeInt, CTypeVoid, NewSymbolTable, ScopeType, get_c_type_from_token
+from symbol_table import CTypeInt, NewSymbolTable, ScopeType, get_c_type_from_token
 from ir_gen import IRGen
 
 
@@ -59,11 +59,12 @@ class Declaration:
             ir_gen.new_func(decl.identifier.identifier)
 
             symbol_table.add_variable(decl.identifier.identifier, CTypeInt, ScopeType.GLOBAL)
+
             for parm in decl.parms:
                 var = symbol_table.add_variable(parm.decl.identifier)
                 ir_gen.register_argument(var)
+
             self.body.make_ir(symbol_table, ir_gen, ctx)
-            
             ctx.set_global(True)
 
         else:

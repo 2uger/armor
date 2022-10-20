@@ -35,6 +35,12 @@ class Ldr:
         self._imm_val = imm_val
 
     def __repr__(self):
+        # hacks, in this case it means this
+        # var: .word 2
+        # adr_var: .word r - src_addr
+        if type(self._src_addr) == str:
+            return f'{self.cmd} {self._dst_reg.name}, adr_{self._src_addr}'
+
         if self._src_addr:
             return f'{self.cmd} {self._dst_reg.name}, [{self._src_addr.asm_str}]'
         else:
@@ -102,10 +108,3 @@ class BX:
 
     def __repr__(self):
         return f'bx{self.cmp_cmd} {self.location_reg.reg}'
-    
-class Data:
-    """Represent data fragment in asm output."""
-    def __init__(self, mem_binding, name, value):
-        self.mem_binding = mem_binding
-        self.name = name
-        self.value = value

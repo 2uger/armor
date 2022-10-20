@@ -49,13 +49,17 @@ class AsmGen:
             print('Global ', global_var, base)
             self.spotmap[global_var] = MemSpot(base)
             base += global_var.c_type.size
-            self.cmds.append(f'.word {value}')
+            self.cmds.append(f'{global_var.literal}: .word {value}')
 
+        # entry point
         self.cmds.append('')
         self.cmds.append('.text')
+        self.cmds.append('.global _start')
+        self.cmds.append('_start:')
+        self.cmds.append('\tb main')
 
         for func_name, args in self._ir_gen.func_args.items():
-            offset = (-1) * (sum([arg.c_type.size for arg in args]) + 4)
+            offset = 4
             for arg in args:
                 print('Local ', arg, offset)
                 self.spotmap[arg] = MemSpot(bp, offset)
@@ -68,7 +72,7 @@ class AsmGen:
             if not locals:
                 fp_size[func_name] = 0
                 continue
-            offset = 0#(-1) * (sum([local.c_type.size for local in locals]))
+            offset = 0
             for local in locals:
                 self.spotmap[local] = MemSpot(bp, offset)
                 offset += local.c_type.size
@@ -93,3 +97,11 @@ class AsmGen:
                 if type(c) == str:
                     continue
                 c.make_asm(self)
+        
+        self.cmds.append('')
+
+        for global_var, value in self._ir_gen.globals.items():
+            print('Global ', global_var, base)
+            self.spotmap[global_var] = MemSpot(base)
+            base += global_var.c_type.size
+            self.cmds.append(f'adr_{global_var.literal}: .word {global_var.literal}')

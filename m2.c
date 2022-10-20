@@ -1,16 +1,14 @@
 int r = 2;
 
 int
-f(int rrr, int arg_1, int ll){
-    r = rrr + 2 + r;
-    return r;
+f(int arg_1, int arg_2)
+{
+    return arg_1 + arg_2;
 };
 
 int
-func_2()
-{
-    f(2, 3, 4);
-    return 2;
+main(int k){
+    int loc = k + 1;
+    return f(2, loc);
 };
-
 

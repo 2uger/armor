@@ -47,4 +47,6 @@ class NewSymbolTable:
         self.tables.pop()
 
 def get_c_type_from_token(token):
-    return {TokenKind.INT: CTypeInt}.get(token.kind)
+    return {
+        TokenKind.INT: CTypeInt
+    }.get(token.kind)
