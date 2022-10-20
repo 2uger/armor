@@ -1,12 +1,13 @@
 int r = 2;
 
+int global = 12312;
 int
 f(int ll){
     if (ll) {
         int m = 1 + 2;
-        return ll + r;
+        return global + r;
     } else {
-        return ll + 2;
+        f(2);
     }
     return ll + 2;
 };

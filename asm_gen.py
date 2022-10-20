@@ -1,14 +1,14 @@
 from collections import OrderedDict
-from utils import Regs
-from symbol_table import CTypeInt, SymbolTable
+
 from spotmap import MemSpot, r0, r1, r2, r3, r4, r5, r6, r7, r8, bp, sp
 from ir import Lable
 from n_asm import Push, Sub, Mov
+from symbol_table import NewSymbolTable
 
 class AsmGen:
     """State of asm generation phase."""
 
-    def __init__(self, symbol_table: SymbolTable, ir_gen):
+    def __init__(self, symbol_table: NewSymbolTable, ir_gen):
         self.cmds = []
         self.spotmap = {}
         self._symbol_table = symbol_table
@@ -40,11 +40,16 @@ class AsmGen:
         self.cmds.append(f'\t{cmd}')
 
     def make_asm(self):
-        for global_var in self._ir_gen.globals:
-            base = 4096
-            print('Global ', global_var)
-            self.spotmap[global_var] = MemSpot(4096)
+        base = 4096 
+        self.cmds.append('.data')
+        for global_var, value in self._ir_gen.globals.items():
+            print('Global ', global_var, base)
+            self.spotmap[global_var] = MemSpot(base)
             base += global_var.c_type.size
+            self.cmds.append(f'.word {value}')
+
+        self.cmds.append('')
+        self.cmds.append('.text')
 
         for func_name, args in self._ir_gen.func_args.items():
             offset = (-1) * (sum([arg.c_type.size for arg in args]) + 4)

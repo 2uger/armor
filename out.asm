@@ -1,47 +1,31 @@
-Section: .data:
-0x1000	0x2	 // r
+.data
+.word 2
+.word 12312
 
-Section: .text:
+.text
 f:
-    push {bp}
-    mov bp, sp
-    sub sp, sp, #4
-    sub r1, bp, #16
-    ldr r0, [r1]
-    ldr r1, =0
-    cmp r0, r1
-    bgt LBL_0
-    ldr r0, =1
-    ldr r1, =2
-    add r2, r0, r1
-    add r0, bp, #4
-    str r2, [r0]
-    sub r1, bp, #16
-    ldr r0, [r1]
-    ldr r2, =4096
-    ldr r1, [r2]
-    add r2, r0, r1
-    sub r0, bp, #8
-    str r2, [r0]
-    mov sp, bp
-    pop {bp ,r0}
-    bx r0
-LBL_0:
-    sub r1, bp, #16
-    ldr r0, [r1]
-    ldr r1, =2
-    add r2, r0, r1
-    sub r0, bp, #8
-    str r2, [r0]
-    mov sp, bp
-    pop {bp ,r0}
-    bx r0
-    sub r1, bp, #16
-    ldr r0, [r1]
-    ldr r1, =2
-    add r2, r0, r1
-    sub r0, bp, #8
-    str r2, [r0]
-    mov sp, bp
-    pop {bp ,r0}
-    bx r0
+	push {bp}
+	mov bp, sp
+	sub sp, sp, #-4
+	bne lable_else_0
+	ldr r0, =3
+	str r0, [bp, #-8]
+	ldr r0, [4100]
+	ldr r1, [4096]
+	add r2, r0, r1
+	mov r0, r2
+	mov sp, bp
+	pop {bp}
+	bx lr
+lable_else_0:
+	ldr r0, =2
+	push {r0}
+	bl f
+	sub sp, sp, #4
+	ldr r1, [bp, #-8]
+	ldr r2, =2
+	add r3, r1, r2
+	mov r0, r3
+	mov sp, bp
+	pop {bp}
+	bx lr

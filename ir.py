@@ -12,7 +12,7 @@ class IRGen:
         self.func_args = {}
         # function locals
         self.func_locals = {}
-        self.globals = []
+        self.globals = {} 
 
     def add(self, ir_cmd):
         self.cmds[self.curr_func].append(ir_cmd)
@@ -24,17 +24,17 @@ class IRGen:
         self.func_args[func_name] = []
         self.func_locals[func_name] = []
 
-    def register_argument(self, val):
+    def register_argument(self, var):
         """Register function argument."""
-        self.func_args[self.curr_func].append(val)
+        self.func_args[self.curr_func].append(var)
 
-    def register_local(self, val):
+    def register_local(self, var):
         """Register function local variable."""
-        self.func_locals[self.curr_func].append(val)
+        self.func_locals[self.curr_func].append(var)
 
-    def register_global(self, val):
+    def register_global(self, var, value):
         """Register global variable."""
-        self.globals.append(val)
+        self.globals[var] = value
 
 
 global_id = 1

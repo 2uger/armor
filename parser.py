@@ -1,13 +1,13 @@
 import ast
-import utils
-
 from tokens import *
 import ast as node
 
+class CompilerException(Exception):
+    def __init__(self, *args):
+        super().__init__(*args)
 
 def parse(index):
     items, index = parse_decl_list(index)
-    utils.messages.append(f'successfully parse program' if node else f'ERROR: error while parsing program, check logs')
     return node.Program(items)
 
 def parse_decl_list(index):
@@ -95,7 +95,7 @@ def parse_statements(index):
     for f in (parse_compound_stmt, parse_if_statement, parse_return, parse_var_decl):
         try:
             return f(index)
-        except utils.CompilerException as e:
+        except CompilerException as e:
             raise e
         except Exception:
             continue
@@ -109,7 +109,7 @@ def parse_compound_stmt(index):
         try:
             stmt_node, index = parse_statements(index)
             items.append(stmt_node)
-        except utils.CompilerException as e:
+        except CompilerException as e:
             raise e
         except Exception:
             break
@@ -197,7 +197,7 @@ def parse_primary(index):
         while True:
             arg, index = parse_assignment(index)
             if not isinstance(arg, (ast.Identifier, ast.Number, ast.FuncCall)):
-                raise utils.CompilerException('only variable, numbers, function call to function call')
+                raise CompilerException('only variable, numbers, function call to function call')
             args.append(arg)
 
             if token_is(index, TokenKind.COMMA):
