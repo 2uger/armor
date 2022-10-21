@@ -11,7 +11,7 @@ main:
 	ldr r0, =2
 	ldr r1, =1
 	cmp r0, r1
-	bgt lable_else_0
+	beq lable_else_0
 	ldr r0, =2
 	ldr r1, =2
 	add r2, r0, r1

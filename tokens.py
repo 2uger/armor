@@ -84,7 +84,8 @@ def lexify_string(line):
             if line[curr_p + 1] == '=':
                 curr_p += 1
                 token = Token(TokenKind.EQ)
-            token = Token(TokenKind.EQUAL_TO)
+            else:
+                token = Token(TokenKind.EQUAL_TO)
         # Identifier
         elif ((s >= 'a' and s <= 'z') or (s >= 'A' and s <= 'Z') or (s == '_')):
             curr_p += 1
