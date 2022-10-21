@@ -10,7 +10,7 @@ Compiler for C-like language.
 * r0 - r11 - free regs
 * r12 - as frame pointer
 
-# Example:
+### Example:
 ```
 int r = 2;
 
@@ -79,4 +79,4 @@ adr_r: .word r
 adr_m: .word m
 ```
 ### How to run:  
-**python3 main.py m1.c -o out.asm**
+python3 main.py m1.c -o out.asm
