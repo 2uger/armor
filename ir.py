@@ -94,13 +94,11 @@ class FuncCall(IRCmd):
         # save local registers
         regs_in_use = asm_gen.regs_in_use
         if regs_in_use:
-            print('save local')
             asm_gen.add(n_asm.Push(regs_in_use))
 
         # push arguments
         arguments_regs = [self._move_to_reg(asm_gen, arg) for arg in self._args]
         if arguments_regs:
-            print('push args')
             asm_gen.add(n_asm.Push(arguments_regs))
         asm_gen.free_regs(arguments_regs)
 

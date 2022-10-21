@@ -1,15 +1,18 @@
-int f(int a) {
-    int k = a + 12;
-    return k;
+int r = 2;
+
+int f(int arg_1, int arg_2) {
+    if (arg_1 > arg_2) {
+        int ll = 3;
+    } else {
+        int ll = 1;
+    }
+    return ll;
 };
 
-int main() {
-    int loc = 2;
-    if (f(2)) {
-        int l = 2 + loc;
-    } else {
-        int r = 1 + 2;
-    }
-    int l = 2 + 1;
-    return l;
+int m = 3;
+
+void main() {
+    int loc = f(2, m) + 1;
+    return loc;
 };
+

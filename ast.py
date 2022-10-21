@@ -3,7 +3,6 @@ from symbol_table import (
     CTypeInt,
     NewSymbolTable,
     ScopeType,
-    get_c_type_from_token
 )
 from ir_gen import IRGen
 
@@ -46,7 +45,6 @@ class Declaration:
                     raise Exception('only constant values for global variables')
                 out = init.make_ir(symbol_table, ir_gen, ctx)
 
-                print('Literal out ', out.literal)
                 if type(out.literal) != int:
                     raise Exception(f'non integer literal for global variable: {decl.identifier}')
                 ir_gen.register_global(val, init.number)
@@ -56,9 +54,6 @@ class Declaration:
                 ir_gen.register_local(val)
                 ir_gen.add(ir.Set(val, out))
         elif isinstance(decl, Function):
-            if get_c_type_from_token(spec) != CTypeInt:
-                raise Exception('function should return int type')
-
             ctx.set_global(False)
             ir_gen.new_func(decl.identifier.identifier)
 
@@ -69,6 +64,7 @@ class Declaration:
                 ir_gen.register_argument(var)
 
             self.body.make_ir(symbol_table, ir_gen, ctx)
+
             ctx.set_global(True)
 
         else:

@@ -34,20 +34,12 @@ def main():
 
         root.make_ir(new_symbol_table, ir_gen, ctx)
 
-        for func_name, cmds in ir_gen.cmds.items():
-            print(func_name)
-            for c in cmds:
-                print(f'\t{c}')
-
         asm_gen = AsmGen(new_symbol_table, ir_gen)
         asm_gen.make_asm()
-        for asm_cmd in asm_gen.cmds:
-            print(asm_cmd)
 
     except Exception as e:
         RED_COLOR = '\033[91m'
         RESET = '\033[0m'
-        print(e.args)
         print('ERROR: ', RED_COLOR + str(e.args[0]) + RESET)
         return
 
