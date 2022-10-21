@@ -158,10 +158,10 @@ class IfStatement:
 
     def make_ir(self, symbol_table, ir_gen, ctx):
         if not isinstance(self.cond, Relational):
-            # Everything is True inside if statement if result of expression > 0
+            # everything is true inside if statement if result of expression != 0
             out = self.cond.make_ir(symbol_table, ir_gen, ctx)
             ir_gen.add(ir.Cmp(out, ir.IRValue(CTypeInt, 0)))
-            cond_cmd = 'ne'
+            cond_cmd = 'eq'
         else:
             self.cond.make_ir(symbol_table, ir_gen, ctx)
             cond_cmd = self.cond.cond
@@ -228,6 +228,7 @@ class Mul(ArithBinOp):
     ir_cmd = ir.Mul
 
 class Relational(ArithBinOp):
+    # cond shows when relational expression is NOT true => when to jump to different location
     cond = None
 
     def __init__(self, left, right, op):
@@ -239,13 +240,13 @@ class Relational(ArithBinOp):
         ir_gen.add(ir.Cmp(l_val, r_val))
 
 class LessThan(Relational):
-    cond = 'lt'
-
-class BiggerThan(Relational):
     cond = 'gt'
 
+class BiggerThan(Relational):
+    cond = 'lt'
+
 class Equal(Relational):
-    cond = 'eq'
+    cond = 'ne'
 
 class Identifier:
     def __init__(self, identifier):

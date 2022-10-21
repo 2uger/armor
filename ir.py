@@ -94,20 +94,24 @@ class FuncCall(IRCmd):
         # save local registers
         regs_in_use = asm_gen.regs_in_use
         if regs_in_use:
+            print('save local')
             asm_gen.add(n_asm.Push(regs_in_use))
 
         # push arguments
-        arguments = [self._move_to_reg(asm_gen, arg) for arg in self._args]
-        if arguments:
-            asm_gen.add(n_asm.Push(arguments))
+        arguments_regs = [self._move_to_reg(asm_gen, arg) for arg in self._args]
+        if arguments_regs:
+            print('push args')
+            asm_gen.add(n_asm.Push(arguments_regs))
+        asm_gen.free_regs(arguments_regs)
 
         asm_gen.add(n_asm.BL(self._func))
-        # Location of function result
+        # Location of function output
         asm_gen.spotmap[self._out] = r0
+        asm_gen.book_reg(r0)
 
         # clean stack from function arguments
-        if arguments:
-            asm_gen.add(n_asm.Add(sp, sp, None, imm=len(arguments) * 4))
+        if arguments_regs:
+            asm_gen.add(n_asm.Add(sp, sp, None, imm=len(arguments_regs) * 4))
 
         # restore saved local registers
         if regs_in_use:
@@ -128,7 +132,8 @@ class Return(IRCmd):
             asm_gen.add(n_asm.Mov(r0, res_reg))
         asm_gen.free_regs([res_reg])
 
-        # function epilogue
+        # # function epilogue
+        # fp_size = asm_gen._ir_gen.func_locals[]
         asm_gen.add(n_asm.Mov(sp, bp))
         asm_gen.add(n_asm.Pop([bp]))
         asm_gen.add(n_asm.BX(lr))
@@ -177,7 +182,7 @@ class ArithBinOp(IRCmd):
 
     def make_asm(self, asm_gen):
         l_reg = self._move_to_reg(asm_gen, self._arg_1)
-        r_reg = self._move_to_reg(asm_gen, self._arg_1)
+        r_reg = self._move_to_reg(asm_gen, self._arg_2)
         res_reg = asm_gen.get_reg()
 
         asm_gen.add(self.asm_cmd(res_reg, l_reg, r_reg))

@@ -34,6 +34,12 @@ class AsmGen:
     def clean_regs(self):
         for reg in self._regs:
             self._regs[reg] = True
+
+    def book_reg(self, reg):
+        if self._regs[reg]:
+            self._regs[reg] = False
+        else:
+            raise Exception('try to book register, that already in use')
     
     @property
     def regs_in_use(self):
@@ -79,10 +85,10 @@ class AsmGen:
             if not locals:
                 fp_size[func_name] = 0
                 continue
-            offset = 0
+            offset = -4
             for local in locals:
                 self.spotmap[local] = MemSpot(bp, offset)
-                offset += local.c_type.size
+                offset -= local.c_type.size
             fp_size[func_name] = offset
 
         for func_name, cmds in self._ir_gen.cmds.items():
@@ -94,7 +100,7 @@ class AsmGen:
 
             frame_pointer_size = fp_size[func_name]
             if frame_pointer_size:
-                self.add(Sub(sp, sp, imm=frame_pointer_size))
+                self.add(Sub(sp, sp, imm=abs(frame_pointer_size)))
             
             for c in cmds:
                 if type(c) == Lable:
