@@ -1,6 +1,8 @@
 import ast
-from tokens import *
 import ast as node
+
+from tokens import *
+
 
 class CompilerException(Exception):
     def __init__(self, *args):

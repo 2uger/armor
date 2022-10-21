@@ -1,7 +1,9 @@
 import enum
 from collections import namedtuple
+
 import ir
 from tokens import TokenKind
+
 
 class ScopeType(enum.Enum):
     """

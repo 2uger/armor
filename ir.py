@@ -1,6 +1,6 @@
-from n_asm import Str, Ldr, Add, Mul, Sub, Mov
 import n_asm
-from spotmap import MemSpot, RegSpot, bp, sp, r0, lr
+from n_asm import Add, Ldr, Mov, Mul, Str, Sub
+from spotmap import MemSpot, RegSpot, bp, lr, r0, sp
 
 global_id = 1
 
@@ -45,25 +45,27 @@ class IRCmd:
                     dst_reg = asm_gen.get_reg()
                     asm_gen.add(Ldr(dst_reg, spot))
             return dst_reg
-        if type(value.literal) == int:
+        elif type(value.literal) == int:
             dst_reg = asm_gen.get_reg()
             asm_gen.add(Mov(dst_reg, None, imm=value.literal))
             return dst_reg
-        raise Exception(f'_move_to_reg: don\'t got spot for: {value}') 
+        else:
+            raise Exception(f'_move_to_reg: don\'t got spot for: {value}') 
 
 class Set(IRCmd):
     """Move one value to another."""
 
-    def __init__(self, dst, arg):
-        self.dst = dst
-        self.arg = arg
+    def __init__(self, out, arg):
+        self._out = out
+        self._arg = arg
     
     def __repr__(self):
-        return f'Set: {self.dst}, {self.arg}'
+        return f'Set: {self._out}, {self._arg}'
 
     def make_asm(self, asm_gen):
-        arg_reg = self._move_to_reg(asm_gen, self.arg)
-        spot = asm_gen.spotmap[self.dst]
+        regs_to_free = []
+        arg_reg = self._move_to_reg(asm_gen, self._arg)
+        spot = asm_gen.spotmap[self._out]
 
         if type(spot) == MemSpot and type(spot._base) != RegSpot:
             tmp_reg = asm_gen.get_reg()
@@ -71,11 +73,12 @@ class Set(IRCmd):
             asm_gen.add(Ldr(tmp_reg, self.dst.literal))
             asm_gen.add(Str(arg_reg, tmp_reg))
 
-            asm_gen.free_regs([tmp_reg, arg_reg])
+            regs_to_free = [tmp_reg, arg_reg]
         else:
             asm_gen.add(Str(arg_reg, spot))
+            regs_to_free = [arg_reg]
 
-            asm_gen.free_regs([arg_reg])
+        asm_gen.free_regs(regs_to_free)
 
 class FuncCall(IRCmd):
 
@@ -112,14 +115,14 @@ class FuncCall(IRCmd):
 
 class Return(IRCmd):
 
-    def __init__(self, value):
-        self._value = value
+    def __init__(self, arg):
+        self._arg = arg
 
     def __repr__(self):
-        return f'Return {self._value}'
+        return f'Return {self._arg}'
 
     def make_asm(self, asm_gen):
-        res_reg = self._move_to_reg(asm_gen, self._value)
+        res_reg = self._move_to_reg(asm_gen, self._arg)
         if res_reg != r0:
             # store return value
             asm_gen.add(n_asm.Mov(r0, res_reg))
@@ -132,18 +135,20 @@ class Return(IRCmd):
 
 class Cmp(IRCmd):
 
-    def __init__(self, left, right):
-        self._left = left
-        self._right = right
+    def __init__(self, arg_1, arg_2):
+        self._arg_1 = arg_1
+        self._arg_2 = arg_2
 
     def __repr__(self):
-        return f'Cmp: {self._left} to {self._right}'
+        return f'Cmp: {self._arg_1} to {self._arg_2}'
 
     def make_asm(self, asm_gen):
-        l_reg = self._move_to_reg(asm_gen, self._left)
-        r_reg = self._move_to_reg(asm_gen, self._right)
+        l_reg = self._move_to_reg(asm_gen, self._arg_1)
+        r_reg = self._move_to_reg(asm_gen, self._arg_2)
 
         asm_gen.add(n_asm.Cmp(l_reg, r_reg))
+
+        asm_gen.free_regs([l_reg, r_reg])
 
 class Jmp(IRCmd):
 
@@ -152,7 +157,7 @@ class Jmp(IRCmd):
         self._cond = cond
 
     def __repr__(self):
-        return f'Jmp: {self._lable}'
+        return f'Jmp_{self._cond}: {self._lable}'
     
     def make_asm(self, asm_gen):
         asm_gen.add(n_asm.B(self._lable, self._cond))
@@ -162,27 +167,24 @@ class ArithBinOp(IRCmd):
 
     asm_cmd = None
 
-    def __init__(self, out, left, right):
-        self.out = out
-        self.left = left
-        self.right = right
+    def __init__(self, out, arg_1, arg_2):
+        self._out = out
+        self._arg_1 = arg_1
+        self._arg_2 = arg_2
     
     def __repr__(self):
-        return f'{self.asm_cmd.__name__}: {self.out}, {self.left}, {self.right}'
+        return f'{self.asm_cmd.__name__}: {self._out}, {self._arg_1}, {self._arg_2}'
 
     def make_asm(self, asm_gen):
-        print('HELLLLLLL')
-        print(self.out)
-        l_reg = self._move_to_reg(asm_gen, self.left)
-        r_reg = self._move_to_reg(asm_gen, self.right)
+        l_reg = self._move_to_reg(asm_gen, self._arg_1)
+        r_reg = self._move_to_reg(asm_gen, self._arg_1)
         res_reg = asm_gen.get_reg()
 
         asm_gen.add(self.asm_cmd(res_reg, l_reg, r_reg))
 
         asm_gen.free_regs([l_reg, r_reg])
 
-        print(f'Register spotmap for {self.out}')
-        asm_gen.spotmap[self.out] = res_reg
+        asm_gen.spotmap[self._out] = res_reg
     
 class Add(ArithBinOp):
     asm_cmd = Add

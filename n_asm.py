@@ -1,5 +1,6 @@
-from spotmap import RegSpot
 import typing as t
+
+from spotmap import RegSpot
 
 
 class ASMCommand:

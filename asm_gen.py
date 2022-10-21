@@ -1,17 +1,17 @@
 from collections import OrderedDict
 
-from spotmap import (
-    MemSpot,
-    r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, bp, sp
-)
 from ir import Lable
-from n_asm import Push, Sub, Mov
+from ir_gen import IRGen
+from n_asm import Mov, Push, Sub
+from spotmap import (MemSpot, bp, r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10,
+                     r11, sp)
 from symbol_table import NewSymbolTable
+
 
 class AsmGen:
     """State of asm generation phase."""
 
-    def __init__(self, symbol_table: NewSymbolTable, ir_gen):
+    def __init__(self, symbol_table: NewSymbolTable, ir_gen: IRGen):
         self.cmds = []
         self.spotmap = {}
         self._symbol_table = symbol_table
@@ -43,19 +43,28 @@ class AsmGen:
         self.cmds.append(f'\t{cmd}')
 
     def make_asm(self):
-        base = 4096 
-        self.cmds.append('.data')
-        for global_var, value in self._ir_gen.globals.items():
-            self.spotmap[global_var] = MemSpot(base)
-            base += global_var.c_type.size
-            self.cmds.append(f'{global_var.literal}: .word {value}')
+        # put global variables in file as
+        # var: .word {{value}}
+        if self._ir_gen.globals:
+            base = 0 
+            self.cmds.append('.data')
+            for global_var, value in self._ir_gen.globals.items():
+                self.spotmap[global_var] = MemSpot(base)
+                base += global_var.c_type.size
+                self.cmds.append(f'{global_var.literal}: .word {value}')
+            self.cmds.append('')
 
         # entry point
-        self.cmds.append('')
         self.cmds.append('.text')
         self.cmds.append('.global _start')
         self.cmds.append('_start:')
         self.cmds.append('\tb main')
+
+        # check for main function without any arguments
+        if 'main' not in self._ir_gen.func_args:
+            raise Exception('provide main function as entry point')
+        elif len(self._ir_gen.func_args['main']) != 0:
+            raise Exception('main function should not receive any arguments')
 
         for func_name, args in self._ir_gen.func_args.items():
             offset = 4
@@ -97,6 +106,8 @@ class AsmGen:
         
         self.cmds.append('')
 
+        # put addresses of global variables at the end of the file as
+        # adr_var: .word {{variable_name}}
         for global_var, value in self._ir_gen.globals.items():
             self.spotmap[global_var] = MemSpot(base)
             base += global_var.c_type.size

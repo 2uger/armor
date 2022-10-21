@@ -1,11 +1,12 @@
 import argparse
-
-from context import Context
+import os
 from parser import parse
-from tokens import create_tokens
-from symbol_table import NewSymbolTable
-from ir_gen import IRGen
+
 from asm_gen import AsmGen
+from context import Context
+from ir_gen import IRGen
+from symbol_table import NewSymbolTable
+from tokens import create_tokens, tokens
 
 
 def main():
@@ -16,6 +17,10 @@ def main():
     compiler_args = args_parser.parse_args()
     file_in = compiler_args.file_in
     file_out = compiler_args.o
+
+    if not os.path.exists(file_in):
+        print(f'file {file_in} does not exists')
+        return
 
     try:
         # Tokenize stage
@@ -38,17 +43,23 @@ def main():
         asm_gen.make_asm()
         for asm_cmd in asm_gen.cmds:
             print(asm_cmd)
+
     except Exception as e:
         RED_COLOR = '\033[91m'
         RESET = '\033[0m'
-        print('ERROR: ', RED_COLOR + e.args[0] + RESET)
+        print(e.args)
+        print('ERROR: ', RED_COLOR + str(e.args[0]) + RESET)
         return
 
     with open(file_out, 'w') as f:
+
         text = []
         for c in asm_gen.cmds:
             text.append(c)
             f.write(c + '\n')
+        # f.write('Section: .data:\n')
+        # for d in sorted(data, key=lambda x: x.mem_binding):
+        #     f.write(f'{hex(d.mem_binding)}\t{hex(d.value)}\t // {d.name}\n')
     
 if __name__ == '__main__':
     main()
