@@ -1,10 +1,6 @@
 import ir
-from symbol_table import (
-    CTypeInt,
-    NewSymbolTable,
-    ScopeType,
-)
 from ir_gen import IRGen
+from symbol_table import CTypeInt, NewSymbolTable, ScopeType
 
 
 class EmptyNode:
@@ -50,9 +46,10 @@ class Declaration:
                 ir_gen.register_global(val, init.number)
             else:
                 val = symbol_table.add_variable(decl.identifier)
-                out = init.make_ir(symbol_table, ir_gen, ctx)
                 ir_gen.register_local(val)
-                ir_gen.add(ir.Set(val, out))
+                if init:
+                    out = init.make_ir(symbol_table, ir_gen, ctx)
+                    ir_gen.add(ir.Set(val, out))
         elif isinstance(decl, Function):
             ctx.set_global(False)
             ir_gen.new_func(decl.identifier.identifier)
@@ -125,8 +122,10 @@ class Compound:
         self.items = items
 
     def make_ir(self, symbol_table, ir_gen, ctx):
+        symbol_table.open_scope()
         for item in self.items:
             item.make_ir(symbol_table, ir_gen, ctx)
+        symbol_table.close_scope()
 
     def __repr__(self):
         r = '{\n'
@@ -153,6 +152,10 @@ class IfStatement:
         self.else_stmt = else_stmt
 
     def make_ir(self, symbol_table, ir_gen, ctx):
+        # do no generate any code if both of statements is empty
+        if not((self.stmt and self.stmt.items) or (self.else_stmt and self.else_stmt.items)):
+            return
+
         if not isinstance(self.cond, Relational):
             # everything is true inside if statement if result of expression != 0
             out = self.cond.make_ir(symbol_table, ir_gen, ctx)
@@ -160,17 +163,27 @@ class IfStatement:
             cond_cmd = 'eq'
         else:
             self.cond.make_ir(symbol_table, ir_gen, ctx)
-            cond_cmd = self.cond.cond
+            cond_cmd = self.cond.n_cond
 
-        else_lable = ir.Lable('else')
-        ir_gen.add(ir.Jmp(else_lable, cond_cmd))
+        lable_end = ir.Lable('end')
+        if self.else_stmt:
+            lable_else = ir.Lable('else')
 
-        symbol_table.open_scope()
-        self.stmt.make_ir(symbol_table, ir_gen, ctx)
-        symbol_table.close_scope()
+            ir_gen.add(ir.Jmp(lable_else, cond_cmd))
 
-        ir_gen.add(else_lable)
-        self.else_stmt.make_ir(symbol_table, ir_gen, ctx)
+            self.stmt.make_ir(symbol_table, ir_gen, ctx)
+
+            ir_gen.add(ir.Jmp(lable_end))
+            ir_gen.add(lable_else)
+
+            self.else_stmt.make_ir(symbol_table, ir_gen, ctx)
+
+            ir_gen.add(lable_end)
+        else:
+            ir_gen.add(ir.Jmp(lable_end, cond_cmd))
+            self.stmt.make_ir(symbol_table, ir_gen, ctx)
+
+            ir_gen.add(lable_end)
 
 class Equals:
     """Expression for assignment."""
@@ -185,8 +198,10 @@ class Equals:
     def make_ir(self, symbol_table, ir_gen, ctx):
         if not isinstance(self.left, Identifier):
             raise Exception('only identifier could be on left side of equal sign')
+        
         dst = self.left.make_ir(symbol_table, ir_gen, ctx)
         res = self.right.make_ir(symbol_table, ir_gen, ctx)
+
         ir_gen.add(ir.Set(dst, res))
 
 class ArithBinOp:
@@ -236,13 +251,28 @@ class Relational(ArithBinOp):
         ir_gen.add(ir.Cmp(l_val, r_val))
 
 class LessThan(Relational):
-    cond = 'gt'
+    cond = 'lt'
+    n_cond = 'ge'
+
+class LessEqual(Relational):
+    cond = 'le'
+    n_cond = 'gt'
 
 class BiggerThan(Relational):
-    cond = 'lt'
+    cond = 'gt'
+    n_cond = 'le'
+
+class BiggerEqual(Relational):
+    cond = 'ge'
+    n_cond = 'lt'
+
+class NotEqual(Relational):
+    cond = 'ne'
+    n_cond = 'eq'
 
 class Equal(Relational):
-    cond = 'ne'
+    cond = 'eq'
+    n_cond = 'ne'
 
 class Identifier:
     def __init__(self, identifier):

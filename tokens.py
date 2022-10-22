@@ -47,7 +47,10 @@ class TokenKind(enum.Enum):
     DIV = '/'
 
     BT = '>'
+    BE = '>='
     LT = '<'
+    LE = '<='
+    NE = '!='
     EQ = '=='
 
 def create_tokens(file_name):
@@ -78,8 +81,24 @@ def lexify_string(line):
         elif (s == '-'): token = Token(TokenKind.MINUS)
         elif (s == '*'): token = Token(TokenKind.MUL)
         elif (s == '/'): token = Token(TokenKind.DIV)
-        elif (s == '>'): token = Token(TokenKind.BT)
-        elif (s == '<'): token = Token(TokenKind.LT)
+        elif (s == '!'): 
+            if line[curr_p + 1] == '=':
+                curr_p += 1
+                token = Token(TokenKind.NE)
+            else:
+                raise Exception(f'unknown symbol for not equal operator: {line[curr_p + 1]}')
+        elif (s == '>'):
+            if line[curr_p + 1] == '=':
+                curr_p += 1
+                token = Token(TokenKind.BE)
+            else:
+                token = Token(TokenKind.BT)
+        elif (s == '<'):
+            if line[curr_p + 1] == '=':
+                curr_p += 1
+                token = Token(TokenKind.LE)
+            else:
+                token = Token(TokenKind.LT)
         elif (s == '='):
             if line[curr_p + 1] == '=':
                 curr_p += 1

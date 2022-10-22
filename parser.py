@@ -162,12 +162,18 @@ def parse_assignment(index):
     op = tokens[index]
     
     node_types = {
+        TokenKind.EQUAL_TO: node.Equals,
+
         TokenKind.PLUS: node.Plus,
         TokenKind.MINUS: node.Minus,
         TokenKind.MUL: node.Mul,
-        TokenKind.EQUAL_TO: node.Equals,
+
+        # relational
         TokenKind.BT: node.BiggerThan,
+        TokenKind.BE: node.BiggerEqual,
         TokenKind.LT: node.LessThan,
+        TokenKind.LE: node.LessEqual,
+        TokenKind.NE: node.NotEqual,
         TokenKind.EQ: node.Equal
     }
 

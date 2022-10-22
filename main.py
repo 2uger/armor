@@ -6,7 +6,7 @@ from asm_gen import AsmGen
 from context import Context
 from ir_gen import IRGen
 from symbol_table import NewSymbolTable
-from tokens import create_tokens, tokens
+from tokens import create_tokens
 
 
 def main():
@@ -38,6 +38,7 @@ def main():
         asm_gen.make_asm()
 
     except Exception as e:
+        raise e
         RED_COLOR = '\033[91m'
         RESET = '\033[0m'
         print('ERROR: ', RED_COLOR + str(e.args[0]) + RESET)

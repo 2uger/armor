@@ -15,10 +15,11 @@ Compiler for C-like language.
 int r = 2;
 
 int f(int arg_1, int arg_2) {
+    int ll;
     if (arg_1 > arg_2) {
-        int ll = 3;
+        ll = 2;
     } else {
-        int ll = 1;
+        ll = 3;
     }
     return ll;
 };
@@ -26,7 +27,7 @@ int f(int arg_1, int arg_2) {
 int m = 3;
 
 void main() {
-    int loc = f(2, m) + 1;
+    int loc = f(2, 3) + 1;
     return loc;
 };
 ```
@@ -39,41 +40,42 @@ m: .word 3
 .text
 .global _start
 _start:
-        b main
+	b main
 f:
-        push {r12}
-        mov r12, sp
-        sub sp, sp, #12
-        ldr r0, [r12, #4]
-        ldr r1, [r12, #8]
-        cmp r0, r1
-        blt lable_else_0
-        ldr r0, =3
-        str r0, [r12, #-4]
-lable_else_0:
-        ldr r0, =1
-        str r0, [r12, #-8]
-        ldr r0, [r12, #-8]
-        mov sp, r12
-        pop {r12}
-        bx lr
+	push {r12}
+	mov r12, sp
+	sub sp, sp, #8
+	ldr r0, [r12, #4]
+	ldr r1, [r12, #8]
+	cmp r0, r1
+	ble lable_else_1
+	ldr r0, =2
+	str r0, [r12, #-4]
+	b lable_end_0
+lable_else_1:
+	ldr r0, =3
+	str r0, [r12, #-4]
+lable_end_0:
+	ldr r0, [r12, #-4]
+	mov sp, r12
+	pop {r12}
+	bx lr
 main:
-        push {r12}
-        mov r12, sp
-        sub sp, sp, #8
-        ldr r0, =2
-        ldr r1, adr_m
-        ldr r2, [r1]
-        push {r0, r2}
-        bl f
-        add sp, sp, #8
-        ldr r1, =1
-        add r2, r0, r1
-        str r2, [r12, #-4]
-        ldr r0, [r12, #-4]
-        mov sp, r12
-        pop {r12}
-        bx lr
+	push {r12}
+	mov r12, sp
+	sub sp, sp, #8
+	ldr r0, =2
+	ldr r1, =3
+	push {r0, r1}
+	bl f
+	add sp, sp, #8
+	ldr r1, =1
+	add r2, r0, r1
+	str r2, [r12, #-4]
+	ldr r0, [r12, #-4]
+	mov sp, r12
+	pop {r12}
+	bx lr
 
 adr_r: .word r
 adr_m: .word m

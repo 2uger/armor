@@ -2,14 +2,10 @@ import n_asm
 from n_asm import Add, Ldr, Mov, Mul, Str, Sub
 from spotmap import MemSpot, RegSpot, bp, lr, r0, sp
 
-global_id = 1
 
 class IRValue:
 
     def __init__(self, c_type, literal=None):
-        global global_id
-        self._id = global_id
-        global_id += 1
         # literal could be:
         # int - represents number literal
         # string - represents string literal
