@@ -81,4 +81,5 @@ adr_r: .word r
 adr_m: .word m
 ```
 ### How to run:  
-python3 main.py m1.c -o out.asm
+python3 main.py m1.c -o out.asm  
+You could use [emulator](https://cpulator.01xz.net/?sys=arm) to run exactly this piece of code.
