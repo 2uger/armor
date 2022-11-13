@@ -1,17 +1,25 @@
-<span style="color:white;font-weight:700;font-size:10px">
 Compiler for C-like language.  
-### Main features:
+#### Main features:
 * Global and local variables
 * Function calls
 * Branching
 * Type checking
 
-### CPU architecture specs:
+#### CPU architecture specs:
 * Use armV7 base arch
 * r0 - r11 - free regs
 * r12 - as frame pointer
 
-### Example:
+xv6 is inspired by John Lions's Commentary on UNIX 6th Edition (Peer
+to Peer Communications; ISBN: 1-57398-013-7; 1st edition (June 14,
+2000)).  See also https://pdos.csail.mit.edu/6.1810/, which provides
+pointers to on-line resources for v6.
+
+The following people have made contributions: Russ Cox (context switching,
+locking), Cliff Frey (MP), Xiao Yu (MP), Nickolai Zeldovich, and Austin
+Clements.
+
+#### Example:
 ```
 int r = 2;
 
@@ -81,6 +89,6 @@ main:
 adr_r: .word r
 adr_m: .word m
 ```
-### How to run:  
+#### How to run:  
 python3 main.py m1.c -o out.asm  
 You could use [emulator](https://cpulator.01xz.net/?sys=arm) to run exactly this piece of code.
