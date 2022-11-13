@@ -1,3 +1,4 @@
+<span style="color:white;font-weight:700;font-size:10px">
 Compiler for C-like language.  
 ### Main features:
 * Global and local variables
