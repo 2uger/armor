@@ -1,9 +1,10 @@
-Compiler for C-like language.  
-#### Main features:
+Armor is toy-ish implementation of compiler for armV7 instruction set  
+C-like syntax, only few types, but implemented all stages of normal compiler
+#### Can handle:
 * Global and local variables
 * Function calls
 * Branching
-* Type checking
+* Simple type checking
 
 #### CPU architecture specs:
 * Use armV7 base arch
@@ -31,7 +32,7 @@ void main() {
     return loc;
 };
 ```
-Will generate:
+#### Will generate:
 ```
 .data
 r: .word 2
